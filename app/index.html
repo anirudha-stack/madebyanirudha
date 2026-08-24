@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anirudha — Coming Soon</title>
+<meta name="description" content="Hardware, firmware and software. Portfolio, notes and build logs — coming soon.">
+<meta name="robots" content="index, follow">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="madebyanirudha">
+<meta property="og:description" content="Hardware, firmware and software. Portfolio, notes and build logs — coming soon.">
+<meta property="og:url" content="https://madebyanirudha.in/">
+<meta name="twitter:card" content="summary">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230b0d10'/><path d='M28 70 L50 30 L72 70' stroke='%234ade80' stroke-width='9' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:        #fbfbfa;
+    --fg:        #12151a;
+    --muted:     #5c6470;
+    --line:      #e2e2df;
+    --accent:    #17904a;
+    --trace:     rgba(18, 21, 26, .07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #0b0d10;
+      --fg:      #e8eaed;
+      --muted:   #8a929e;
+      --line:    #1e232a;
+      --accent:  #4ade80;
+      --trace:   rgba(232, 234, 237, .06);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 2rem 1.5rem;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Subtle PCB-trace motif. Decorative only. */
+  .traces {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .traces svg { width: 100%; height: 100%; }
+  .traces path, .traces circle { stroke: var(--trace); fill: none; stroke-width: 1.5; }
+  .traces circle { fill: var(--trace); stroke: none; }
+
+  main {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 34rem;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    font-size: .75rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.75rem;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1;  transform: scale(1); }
+    50%      { opacity: .35; transform: scale(.8); }
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 6vw, 2.9rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    margin: 0 0 1.1rem;
+    font-weight: 600;
+  }
+  h1 .by { color: var(--muted); font-weight: 400; }
+
+  p {
+    margin: 0 0 1.1rem;
+    color: var(--muted);
+    max-width: 30rem;
+  }
+  p strong { color: var(--fg); font-weight: 600; }
+
+  .rule {
+    height: 1px;
+    background: var(--line);
+    margin: 2rem 0 1.5rem;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.5rem;
+    font-size: .85rem;
+  }
+  a {
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 1px;
+    transition: color .15s ease;
+  }
+  a:hover { color: var(--accent); }
+
+  .soon {
+    margin-top: 2.5rem;
+    font-size: .78rem;
+    color: var(--muted);
+    opacity: .75;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="traces" aria-hidden="true">
+  <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+    <path d="M-20 120 H140 L180 80 H320" />
+    <path d="M-20 200 H90 L130 240 H280 L320 200 H460" />
+    <path d="M820 460 H660 L620 500 H480" />
+    <path d="M820 380 H700 L660 340 H520 L480 380 H360" />
+    <path d="M120 620 V500 L160 460 V340" />
+    <path d="M680 -20 V100 L640 140 V260" />
+    <circle cx="320" cy="80"  r="4" />
+    <circle cx="460" cy="200" r="4" />
+    <circle cx="480" cy="500" r="4" />
+    <circle cx="360" cy="380" r="4" />
+    <circle cx="160" cy="340" r="4" />
+    <circle cx="640" cy="260" r="4" />
+  </svg>
+</div>
+
+<main>
+  <div class="tag"><span class="dot"></span> Under construction</div>
+
+  <h1><span class="by">made by</span> Anirudha</h1>
+
+  <p>
+    I build things — <strong>hardware</strong>, <strong>firmware</strong> and
+    <strong>software</strong>. Circuit boards, printed parts, and the code that
+    makes them useful.
+  </p>
+
+  <p>
+    This will become a portfolio and a place for build logs: what I made, how it
+    went, and what broke along the way.
+  </p>
+
+  <div class="rule"></div>
+
+  <div class="meta">
+    <a href="mailto:gaikwadaniruddha17@gmail.com">gaikwadaniruddha17@gmail.com</a>
+    <!-- Add when ready:
+    <a href="https://github.com/USERNAME">GitHub</a>
+    <a href="https://linkedin.com/in/USERNAME">LinkedIn</a>
+    -->
+  </div>
+
+  <p class="soon">Projects, notes and a small store — soon.</p>
+</main>
+
+</body>
+</html>

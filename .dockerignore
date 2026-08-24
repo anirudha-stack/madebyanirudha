@@ -1,0 +1,8 @@
+.git
+.github
+.gitignore
+.dockerignore
+deploy/
+how_to_deploy_website.md
+README.md
+.env*

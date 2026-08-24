@@ -1,0 +1,8 @@
+.env
+.env.local
+*.local
+.DS_Store
+node_modules/
+dist/
+build/
+backups/

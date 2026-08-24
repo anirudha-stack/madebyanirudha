@@ -1,0 +1,88 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+# Never cancel a deploy in flight — a half-applied change is worse than a queue.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  REGION: ${{ vars.GCP_REGION || 'asia-south1' }}
+  AR_REPO: ${{ vars.AR_REPO || 'web' }}
+  SERVICE_NAME: ${{ vars.SERVICE_NAME || 'website' }}
+
+jobs:
+  deploy:
+    if: vars.GCP_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:sha-${{ github.sha }}
+            ${{ env.REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build once, promote the digest: production runs the exact bytes CI tested.
+      - name: Resolve digest
+        id: image
+        run: echo "ref=${REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${AR_REPO}/${SERVICE_NAME}@${{ steps.push.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
+      - name: Apply service manifest
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+          RUNTIME_SA: ${{ vars.GCP_RUNTIME_SA }}
+        run: |
+          envsubst '$SERVICE_NAME $REGION $IMAGE $RUNTIME_SA' < deploy/service.yaml > /tmp/service.yaml
+          cat /tmp/service.yaml
+          gcloud run services replace /tmp/service.yaml --region "$REGION" --quiet
+          gcloud run services add-iam-policy-binding "$SERVICE_NAME" \
+            --region "$REGION" --member=allUsers --role=roles/run.invoker --quiet
+
+      - name: Smoke check
+        run: |
+          URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --format='value(status.url)')
+          curl -fsS --retry 5 --retry-all-errors "$URL/healthz" >/dev/null
+          {
+            echo "### Deployed"
+            echo "- origin: $URL"
+            echo "- digest: \`${{ steps.push.outputs.digest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Roll back on failure
+        if: failure()
+        run: |
+          PREV=$(gcloud run revisions list --service "$SERVICE_NAME" --region "$REGION" \
+                 --format='value(metadata.name)' --sort-by=~metadata.creationTimestamp | sed -n 2p)
+          if [ -n "$PREV" ]; then
+            echo "::warning::rolling back to $PREV"
+            gcloud run services update-traffic "$SERVICE_NAME" --region "$REGION" --to-revisions "$PREV=100" --quiet
+          fi
