@@ -136,6 +136,57 @@
     opacity: .75;
   }
 
+  /* Countdown to launch. */
+  .countdown {
+    margin-top: 2.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: .85rem;
+  }
+  .cd-unit {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+  }
+  .cd-num {
+    font-size: clamp(1.8rem, 6.5vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -.02em;
+    /* Fixed-width digits, or the layout jitters on every tick. */
+    font-variant-numeric: tabular-nums;
+  }
+  .cd-label {
+    font-size: .66rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .cd-sep {
+    font-size: clamp(1.8rem, 6.5vw, 2.6rem);
+    line-height: 1;
+    color: var(--line);
+    font-weight: 600;
+  }
+  .cd-caption {
+    margin-top: .9rem;
+    font-size: .78rem;
+    color: var(--muted);
+  }
+  .cd-caption strong { color: var(--fg); font-weight: 600; }
+  /* Swapped in when the clock reaches zero. */
+  .countdown.is-live .cd-num { color: var(--accent); }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .dot { animation: none; }
   }
@@ -176,6 +227,20 @@
     went, and what broke along the way.
   </p>
 
+  <!-- Digits are aria-hidden: a per-second live region would flood a screen
+       reader. The .sr-only summary below updates once a minute instead. -->
+  <div class="countdown" id="countdown" aria-hidden="true">
+    <div class="cd-unit"><span class="cd-num" id="cd-h">--</span><span class="cd-label">hrs</span></div>
+    <span class="cd-sep">:</span>
+    <div class="cd-unit"><span class="cd-num" id="cd-m">--</span><span class="cd-label">min</span></div>
+    <span class="cd-sep">:</span>
+    <div class="cd-unit"><span class="cd-num" id="cd-s">--</span><span class="cd-label">sec</span></div>
+  </div>
+  <p class="cd-caption">
+    until launch — <strong><time datetime="2026-09-07T00:00:00+05:30">7 September 2026</time></strong>
+  </p>
+  <p class="sr-only" id="cd-sr" aria-live="polite"></p>
+
   <div class="rule"></div>
 
   <div class="meta">
@@ -188,6 +253,59 @@
 
   <p class="soon">Projects, notes and a small store — soon.</p>
 </main>
+
+<script>
+(function () {
+  // Launch moment. Offset is explicit, so the countdown is identical for a
+  // visitor in any timezone. Change this one line to move the date.
+  var TARGET = new Date('2026-09-07T00:00:00+05:30').getTime();
+
+  var elH = document.getElementById('cd-h');
+  var elM = document.getElementById('cd-m');
+  var elS = document.getElementById('cd-s');
+  var elSr = document.getElementById('cd-sr');
+  var box = document.getElementById('countdown');
+  if (!elH || !elM || !elS || !box) return;
+
+  var lastMin = -1;
+
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function tick() {
+    // Always recompute from the clock rather than decrementing a counter, so a
+    // backgrounded or throttled tab resyncs instead of drifting.
+    var left = TARGET - Date.now();
+
+    if (left <= 0) {
+      elH.textContent = elM.textContent = elS.textContent = '00';
+      box.classList.add('is-live');
+      elSr.textContent = 'The site is live.';
+      return; // stop scheduling
+    }
+
+    var totalSec = Math.floor(left / 1000);
+    // Hours are cumulative — no days unit, so this starts around 336.
+    var h = Math.floor(totalSec / 3600);
+    var m = Math.floor(totalSec % 3600 / 60);
+    var s = totalSec % 60;
+
+    elH.textContent = pad(h);
+    elM.textContent = pad(m);
+    elS.textContent = pad(s);
+
+    // Announce once a minute, not once a second.
+    if (m !== lastMin) {
+      lastMin = m;
+      elSr.textContent = h + ' hours and ' + m + ' minutes until launch.';
+    }
+
+    // Re-align to the next real second boundary so the digits tick cleanly.
+    setTimeout(tick, 1000 - (Date.now() % 1000));
+  }
+
+  tick();
+})();
+</script>
 
 </body>
 </html>
