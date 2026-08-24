@@ -1,0 +1,30 @@
+{
+  // Cloudflare Worker — madebyanirudha.in
+  // Account: madebyanirudha@gmail.com (must match the account holding the zone).
+  //
+  // Phase 0: a pure static site. No `main` entry point, so Cloudflare serves
+  // ./public straight off the edge with no Worker invocation and no cost.
+  //
+  // When the full site lands, add here and nothing else moves:
+  //   "main": "src/index.ts",
+  //   "assets": { "directory": "./public", "binding": "ASSETS" },
+  // ...then the same project serves static assets AND server-side routes.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "madebyanirudha",
+  "compatibility_date": "2026-08-24",
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  // Custom domains. Cloudflare creates and manages the proxied DNS records for
+  // these, which is also what evicts the GoDaddy parking records.
+  // TODO: once a Worker script exists, 301 www -> apex for canonicalisation.
+  "routes": [
+    { "pattern": "madebyanirudha.in", "custom_domain": true },
+    { "pattern": "www.madebyanirudha.in", "custom_domain": true }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
