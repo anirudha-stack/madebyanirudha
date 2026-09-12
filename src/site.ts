@@ -4,10 +4,7 @@ export const site = {
   wordmark: "made by Anirudha",
   domain: "https://madebyanirudha.in",
   email: "gaikwadaniruddha17@gmail.com",
-  identity: [
-    "Senior applied AI engineer by profession.",
-    "Hardware maker at home.",
-  ],
+  identity: "Software for money. Hardware for heart.",
   description:
     "Anirudha designs the circuit board, the enclosure, the firmware and the software — the whole device. Build logs, how-to guides, and the things he makes.",
   // Elsewhere on the web. Rendered in the footer in this order.

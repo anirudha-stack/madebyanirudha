@@ -107,8 +107,8 @@
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display (phone)", "purpose": "Home identity line at 390px; 34px, weight 600, max 22ch." },
-      "display-lg": { "displayName": "Display (desktop)", "purpose": "Home identity line from 640px; 56px, weight 600." },
+      "display": { "displayName": "Display (phone)", "purpose": "Home line at 390px; 24px, weight 500, one short sentence." },
+      "display-lg": { "displayName": "Display (desktop)", "purpose": "Home line from 640px; 32px, weight 500." },
       "headline": { "displayName": "Headline (phone)", "purpose": "Page titles on project, log, guide, index pages; 32px." },
       "headline-lg": { "displayName": "Headline (desktop)", "purpose": "Page titles from 640px; 44px." },
       "title": { "displayName": "Title (phone)", "purpose": "Flagship project name under its photograph; also .prose h2." },

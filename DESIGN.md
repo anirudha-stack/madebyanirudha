@@ -17,16 +17,16 @@ colors:
 typography:
   display:
     fontFamily: "Schibsted Grotesk Variable, system-ui, -apple-system, Segoe UI, sans-serif"
-    fontSize: "2.125rem"
-    fontWeight: 600
-    lineHeight: 1.05
-    letterSpacing: "-0.03em"
+    fontSize: "1.5rem"
+    fontWeight: 500
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
   display-lg:
     fontFamily: "Schibsted Grotesk Variable, system-ui, -apple-system, Segoe UI, sans-serif"
-    fontSize: "3.5rem"
-    fontWeight: 600
-    lineHeight: 1.05
-    letterSpacing: "-0.03em"
+    fontSize: "2rem"
+    fontWeight: 500
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
   headline:
     fontFamily: "Schibsted Grotesk Variable, system-ui, -apple-system, Segoe UI, sans-serif"
     fontSize: "2rem"
@@ -156,7 +156,7 @@ components:
 
 A senior engineer's personal site played straight: one column of text and hairlines on near-white paper, with a wide photograph slot where the object itself does the persuading. Nothing is dressed up. There are no cards, no panels, no gradients, no shadows; the only ornament is a single kapton-amber accent that appears on marks (a hover rule, a focus ring, an arrow) and never on running text. Ink and paper invert cleanly at night: the dark scheme follows the OS and keeps the same structure, only the surface changes.
 
-Density is editorial rather than dashboard. Sections are separated by space (48–96px) and by 1px rules, never by boxes. Type carries the hierarchy with three weights (400, 500, 600) and tight display tracking; JetBrains Mono appears only where a number needs to line up (dates, the footer year). Motion is nearly absent: one authored cross-document view transition carries the flagship photograph from the home page into its project page, and link rules lift on hover. Nothing else enters, fades, or parallaxes.
+Density is editorial rather than dashboard. Sections are separated by space (48–96px) and by 1px rules, never by boxes. Type carries the hierarchy with two weights (400, 500) and tight heading tracking; the home line is deliberately small (24/32px) so the photograph, not the person, leads; JetBrains Mono appears only where a number needs to line up (dates, the footer year). Motion is nearly absent: one authored cross-document view transition carries the flagship photograph from the home page into its project page, and link rules lift on hover. Nothing else enters, fades, or parallaxes.
 
 Confirmed visual rejections: the dark-neon dev portfolio with a repo-card grid, the cream editorial studio page, PCB-trace motifs, terminal or instrument chrome, hero gradients and glows, countdowns, invented numbers, and kicker/eyebrow labels above headings.
 
@@ -199,7 +199,7 @@ Two neutrals and a rule colour form the page; a single warm amber is held back f
 **Character:** One grotesk at three weights does everything; the mono is a measuring instrument, not a voice. Display sizes are tracked tight (-0.03em) and set at weight 600 so the identity line reads as a statement; every other heading drops to 500 and -0.02em to -0.03em. Body is 16px at 1.5 line-height with `text-wrap: pretty`; headings use `text-wrap: balance`.
 
 ### Hierarchy
-- **Display** (600, 34px phone / 56px desktop, 1.05, -0.03em): the home identity line only. Max width 22ch. Sentences break onto their own lines on phones and run inline on desktop.
+- **Display** (500, 24px phone / 32px desktop, 1.2, -0.02em): the home line only, "Software for money. Hardware for heart." One line; modest by intent, never a job title at billboard size.
 - **Headline** (500, 32px phone / 44px desktop, 1.08, -0.03em): page titles on project, log, guide, and index pages.
 - **Title** (500, 24px phone / 28px desktop, -0.02em): the flagship project name under its photograph. Also `.prose` h2 at 24px.
 - **Subtitle** (500, 18px): supporting-project titles on the home page and `.prose` h3.
@@ -211,7 +211,7 @@ Two neutrals and a rule colour form the page; a single warm amber is held back f
 - **Mono** (400, 0.875em of parent, tabular-nums, 0 tracking): `<time>` elements and `.num`; `.prose` code and 14px `pre` blocks.
 
 ### Named Rules
-**The Three Weights Rule.** 400 for text, 500 for headings and emphasised facts, 600 for the display line. No 300, no 700, no italics as hierarchy.
+**The Two Weights Rule.** 400 for text, 500 for headings, the wordmark and emphasised facts. No 300, no 600+, no italics as hierarchy; size and colour do the rest.
 
 **The Mono Measures Rule.** JetBrains Mono is for dates, years, numbers, and code. It is never a heading, a label, or a stylistic voice.
 
@@ -221,7 +221,7 @@ Two neutrals and a rule colour form the page; a single warm amber is held back f
 
 A single centred column with a 70rem (1120px) measure and 20px gutters on phones, 32px from the `sm` breakpoint (640px) up. Header 56px / 64px and footer share the same measure and gutters as `main`, so the wordmark, the left edge of the identity line, the photograph, the ledger, and the footer links all sit on one left edge. Everything is left-aligned; the only right-aligned items are the nav, the "See the build" link, and the footer year, each on the far edge of a justified row.
 
-Vertical rhythm is in 4px steps with a small set of recurring gaps: 4px between a term and its fact, 16–20px between list rows, 24px between a photograph and its ledger, 48/64px above the identity block, 80px between home sections, 96px above the footer. Text blocks are capped by character measure (22ch display, 58–60ch lede, 68ch prose), not by column width.
+Vertical rhythm is in 4px steps with a small set of recurring gaps: 4px between a term and its fact, 16–20px between list rows, 24px between a photograph and its ledger, 48/64px above the identity block (now 48/64px, the block itself shorter), 80px between home sections, 96px above the footer. Text blocks are capped by character measure (58–60ch lede, 68ch prose), not by column width; the display line is a single short sentence.
 
 Responsive behaviour is one breakpoint, `sm` (640px). Below it: gutters narrow to 20px, photographs go full-bleed (negative 20px margins) while text stays in the gutter, the ledger stacks 2×2, the two-column log/guide section and the supporting-project grid stack to one column, and post rows stack date under title. Above it: the ledger spreads to four columns with 24px gaps, logs and guides sit side by side in a two-column grid with 48px gap, and the dated post list gains a fixed 136px date column.
 
@@ -286,11 +286,11 @@ The site has no buttons, inputs, chips, or cards. Its components are links, list
 - **Do** keep everything on one paper surface and separate groups with a 1px hairline in `{colors.hairline}` or with space (48/64/80/96px), never with a fill.
 - **Do** reserve kapton amber for the hover underline, the focus ring, and the arrow after a primary link.
 - **Do** author every colour as a light/dark pair on the six tokens (`--bg`, `--fg`, `--muted`, `--rule`, `--accent`, `--selection`) and let `prefers-color-scheme` select it.
-- **Do** set display at 600/-0.03em, headings at 500/-0.02em to -0.03em, and text at 400; stop at those three weights.
+- **Do** set headings, the home line and the wordmark at 500 with -0.02em to -0.03em tracking and text at 400; stop at those two weights.
 - **Do** put dates, years, and numbers in JetBrains Mono with tabular figures at 0.875em, and leave every word in Schibsted Grotesk.
 - **Do** run photographs edge-to-edge at 16:10 within the 70rem measure, full-bleed on phones, square, unframed.
 - **Do** caption a device with the Ledger: hairline above, four terms over four facts, 2×2 on phones.
-- **Do** cap text by measure (22ch display, 58–60ch lede, 68ch prose) rather than stretching it to the column.
+- **Do** cap text by measure (58–60ch lede, 68ch prose) rather than stretching it to the column.
 - **Do** supply flagship photographs shot or cropped on a mid-grey or dark surface, since the slot has no inset or hairline in dark mode.
 
 ### Don't:
