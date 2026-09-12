@@ -1,3 +1,167 @@
-/* Tailwind v4 entry. Design tokens (@theme) are added by the design pass —
-   deliberately none yet; the visual world is not decided. */
 @import "tailwindcss";
+@import "@fontsource-variable/schibsted-grotesk";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* Tokens. Light by default: the home visitor is most often at a desk in
+   daylight. Dark follows the OS for the bench at night. */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #151517;
+  --muted: #66666c;
+  --rule: #e3e3e6;
+  --accent: #b8780a; /* kapton amber; marks only, never running text */
+  --selection: #f3e2b8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0f10;
+    --fg: #ececee;
+    --muted: #9a9aa1;
+    --rule: #27272b;
+    --accent: #f0b429;
+    --selection: #4a3a10;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --font-sans:
+    "Schibsted Grotesk Variable", system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-mono:
+    "JetBrains Mono Variable", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  --container-measure: 70rem;
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    scrollbar-color: var(--rule) transparent;
+  }
+  body {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+  ::selection {
+    background: var(--selection);
+    color: var(--fg);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+  time,
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.875em;
+    letter-spacing: 0;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* Cross-document view transition, no client router. The flagship
+   photograph carries from home into its page. */
+@view-transition {
+  navigation: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Text links: a rule that sits low and lifts to the accent on hover. */
+.link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: var(--rule);
+  transition:
+    text-decoration-color 160ms cubic-bezier(0.2, 0, 0, 1),
+    text-underline-offset 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+.link:hover {
+  text-decoration-color: var(--accent);
+  text-underline-offset: 0.3em;
+}
+
+/* Long-form MDX body. */
+.prose {
+  max-width: 68ch;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+.prose > * + * {
+  margin-top: 1.25em;
+}
+.prose h2 {
+  font-size: 1.5rem;
+  margin-top: 2.5em;
+}
+.prose h3 {
+  font-size: 1.125rem;
+  margin-top: 2em;
+}
+.prose a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: var(--rule);
+}
+.prose a:hover {
+  text-decoration-color: var(--accent);
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+.prose pre {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--rule);
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+.prose img {
+  width: 100%;
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.25em;
+}
+.prose li + li {
+  margin-top: 0.4em;
+}

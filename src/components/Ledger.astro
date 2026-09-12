@@ -1,0 +1,24 @@
+---
+// The four layers of a device, stated as facts. This is the site's one
+// recognisable component: it is the proof of "one person, whole device".
+interface Props {
+  layers: { pcb: string; enclosure: string; firmware: string; software: string };
+  class?: string;
+}
+const { layers, class: className = "" } = Astro.props;
+const rows = [
+  ["PCB", layers.pcb],
+  ["Enclosure", layers.enclosure],
+  ["Firmware", layers.firmware],
+  ["Software", layers.software],
+];
+---
+
+<dl class:list={["grid grid-cols-2 gap-x-6 gap-y-5 border-t border-rule pt-4 sm:grid-cols-4", className]}>
+  {rows.map(([name, fact]) => (
+    <div>
+      <dt class="text-[0.8125rem] text-muted">{name}</dt>
+      <dd class="mt-1 text-[0.9375rem] font-[500] leading-snug">{fact}</dd>
+    </div>
+  ))}
+</dl>

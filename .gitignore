@@ -15,3 +15,12 @@ backups/
 
 # impeccable launcher downloads its binary on first run
 .claude/skills/impeccable/scripts/bin/
+
+# Raw camera exports stay local; the site uses the exported, resized copies.
+src/assets/**/DSC*.JPG
+src/assets/**/DSC*.jpg
+
+# impeccable session state (screenshots, hook cache, decision logs)
+.impeccable/review/
+.impeccable/hook.cache.json
+.impeccable/questions/

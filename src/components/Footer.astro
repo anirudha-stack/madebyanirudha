@@ -1,0 +1,17 @@
+---
+import { site } from "../site";
+
+const year = new Date().getFullYear();
+const links = [{ label: site.email, href: `mailto:${site.email}` }, ...site.links];
+---
+
+<footer class="mx-auto mt-24 w-full max-w-measure px-5 pb-10 sm:px-8">
+  <div class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-t border-rule pt-6 text-[0.9375rem]">
+    <ul class="flex flex-wrap gap-x-6 gap-y-2">
+      {links.map((l) => (
+        <li><a class="link" href={l.href} rel={l.href.startsWith("http") ? "me noopener" : undefined}>{l.label}</a></li>
+      ))}
+    </ul>
+    <p class="text-muted"><span class="num">{year}</span> · {site.wordmark}</p>
+  </div>
+</footer>

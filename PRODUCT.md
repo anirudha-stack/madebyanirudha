@@ -68,8 +68,8 @@ the assembled thing itself.
   popular file never generates a bill.
 - Hosting must remain free: static assets are unmetered; only Worker-executed
   routes count against the 100k req/day free limit.
-- Launch is 14 September 2026 (a coming-soon page with a countdown is live
-  today at `public/index.html`).
+- Launch date may move; the coming-soon countdown was retired when the real
+  home page shipped (12 Sept 2026).
 
 ## Capabilities and Constraints
 
@@ -91,8 +91,6 @@ Undecided (record, do not invent):
 - Which checkout provider (Razorpay vs Stripe).
 - Which database when one is needed (D1 vs Neon).
 - Specific products, prices, and shipping regions.
-- Social profile links (GitHub, LinkedIn placeholders are commented out in the
-  coming-soon page).
 
 Terminology: "guide" (how-to, reproducible), "log" / "build log" (blog entry,
 narrative), "project" (a finished thing, may have both), "store".
@@ -101,6 +99,8 @@ narrative), "project" (a finished thing, may have both), "store".
 
 - Name: **madebyanirudha** / "made by Anirudha". Domain `madebyanirudha.in`.
 - Contact: gaikwadaniruddha17@gmail.com (public on the site).
+- Elsewhere: instructables.com/member/madebyanirudha, instagram.com/madebyanirudha,
+  youtube.com/@madebyanirudha. No GitHub or LinkedIn on the site.
 - **Nothing visual from the coming-soon page is binding.** The green accent,
   PCB-trace motif, and monospace voice were placeholders; the real site starts
   fresh.
@@ -120,6 +120,12 @@ narrative), "project" (a finished thing, may have both), "store".
   re-offering foreign worlds.
 
 ## Evidence on Hand
+
+Flagship project: **Undeer**, a micromouse robot driven by BLDC motors where
+the field uses brushed DC ("the micromouse world's Fosbury flop", Anirudha's
+framing). Photographs shot 8 Aug 2021 are in src/assets/flagship (five
+exported for the site; raw camera files stay local). Layer facts are still
+"WIP" until Anirudha writes them.
 
 Exists (not yet in the repo — Anirudha will supply):
 

@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-12T00:00:00Z",
+  "title": "Design System: made by Anirudha",
+  "source": {
+    "tokens": "src/styles/global.css",
+    "shell": ["src/layouts/Base.astro", "src/components/Header.astro", "src/components/Footer.astro"],
+    "components": ["src/components/Ledger.astro", "src/components/PostList.astro", "src/components/PostPage.astro"],
+    "surfaces": ["src/pages/index.astro", "src/pages/projects/[slug].astro"],
+    "cssVariables": {
+      "light": { "--bg": "#ffffff", "--fg": "#151517", "--muted": "#66666c", "--rule": "#e3e3e6", "--accent": "#b8780a", "--selection": "#f3e2b8" },
+      "dark": { "--bg": "#0f0f10", "--fg": "#ececee", "--muted": "#9a9aa1", "--rule": "#27272b", "--accent": "#f0b429", "--selection": "#4a3a10" },
+      "scheme": "prefers-color-scheme; color-scheme: light dark on :root; no toggle"
+    }
+  },
+  "extensions": {
+    "colorMeta": {
+      "kapton": {
+        "role": "primary",
+        "displayName": "Kapton Amber",
+        "cssVar": "--accent",
+        "canonical": "#b8780a",
+        "darkCounterpart": "kapton-dark",
+        "tonalRamp": ["oklch(22% 0.06 75)", "oklch(32% 0.09 75)", "oklch(42% 0.11 75)", "oklch(52% 0.13 75)", "oklch(60% 0.14 75)", "oklch(72% 0.15 78)", "oklch(84% 0.12 82)", "oklch(94% 0.05 85)"]
+      },
+      "kapton-dark": {
+        "role": "primary",
+        "displayName": "Kapton Amber (dark scheme)",
+        "cssVar": "--accent",
+        "canonical": "#f0b429",
+        "tonalRamp": ["oklch(22% 0.06 78)", "oklch(34% 0.09 78)", "oklch(46% 0.12 78)", "oklch(58% 0.14 78)", "oklch(70% 0.15 80)", "oklch(80% 0.16 82)", "oklch(88% 0.11 84)", "oklch(95% 0.05 86)"]
+      },
+      "kapton-wash": {
+        "role": "primary",
+        "displayName": "Kapton Wash",
+        "cssVar": "--selection",
+        "canonical": "#f3e2b8",
+        "darkCounterpart": "kapton-wash-dark",
+        "tonalRamp": ["oklch(20% 0.04 85)", "oklch(32% 0.05 85)", "oklch(45% 0.06 85)", "oklch(58% 0.07 85)", "oklch(70% 0.07 85)", "oklch(82% 0.07 85)", "oklch(91% 0.06 85)", "oklch(96% 0.03 85)"]
+      },
+      "kapton-wash-dark": {
+        "role": "primary",
+        "displayName": "Kapton Wash (dark scheme)",
+        "cssVar": "--selection",
+        "canonical": "#4a3a10",
+        "tonalRamp": ["oklch(18% 0.04 80)", "oklch(26% 0.05 80)", "oklch(34% 0.06 80)", "oklch(44% 0.07 80)", "oklch(56% 0.08 80)", "oklch(70% 0.08 80)", "oklch(84% 0.07 80)", "oklch(95% 0.03 80)"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "cssVar": "--bg",
+        "canonical": "#ffffff",
+        "darkCounterpart": "paper-dark",
+        "tonalRamp": ["oklch(15% 0.003 285)", "oklch(26% 0.003 285)", "oklch(38% 0.003 285)", "oklch(50% 0.003 285)", "oklch(62% 0.003 285)", "oklch(76% 0.003 285)", "oklch(90% 0.002 285)", "oklch(100% 0 0)"]
+      },
+      "paper-dark": {
+        "role": "neutral",
+        "displayName": "Paper (dark scheme)",
+        "cssVar": "--bg",
+        "canonical": "#0f0f10",
+        "tonalRamp": ["oklch(15% 0.003 285)", "oklch(26% 0.003 285)", "oklch(38% 0.003 285)", "oklch(50% 0.003 285)", "oklch(62% 0.003 285)", "oklch(76% 0.003 285)", "oklch(90% 0.002 285)", "oklch(97% 0.001 285)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "cssVar": "--fg",
+        "canonical": "#151517",
+        "darkCounterpart": "ink-dark",
+        "tonalRamp": ["oklch(17% 0.004 285)", "oklch(28% 0.004 285)", "oklch(40% 0.004 285)", "oklch(52% 0.004 285)", "oklch(64% 0.004 285)", "oklch(77% 0.003 285)", "oklch(89% 0.002 285)", "oklch(96% 0.001 285)"]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Ink (dark scheme)",
+        "cssVar": "--fg",
+        "canonical": "#ececee",
+        "tonalRamp": ["oklch(17% 0.004 285)", "oklch(28% 0.004 285)", "oklch(40% 0.004 285)", "oklch(52% 0.004 285)", "oklch(64% 0.004 285)", "oklch(77% 0.003 285)", "oklch(89% 0.002 285)", "oklch(95% 0.001 285)"]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "cssVar": "--muted",
+        "canonical": "#66666c",
+        "darkCounterpart": "graphite-dark",
+        "tonalRamp": ["oklch(16% 0.006 285)", "oklch(27% 0.007 285)", "oklch(38% 0.008 285)", "oklch(50% 0.008 285)", "oklch(60% 0.008 285)", "oklch(72% 0.007 285)", "oklch(85% 0.005 285)", "oklch(95% 0.003 285)"]
+      },
+      "graphite-dark": {
+        "role": "neutral",
+        "displayName": "Graphite (dark scheme)",
+        "cssVar": "--muted",
+        "canonical": "#9a9aa1",
+        "tonalRamp": ["oklch(16% 0.006 285)", "oklch(27% 0.007 285)", "oklch(38% 0.008 285)", "oklch(50% 0.008 285)", "oklch(60% 0.008 285)", "oklch(69% 0.008 285)", "oklch(85% 0.005 285)", "oklch(95% 0.003 285)"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "cssVar": "--rule",
+        "canonical": "#e3e3e6",
+        "darkCounterpart": "hairline-dark",
+        "tonalRamp": ["oklch(15% 0.004 285)", "oklch(26% 0.005 285)", "oklch(38% 0.005 285)", "oklch(50% 0.005 285)", "oklch(62% 0.005 285)", "oklch(76% 0.004 285)", "oklch(91% 0.003 285)", "oklch(97% 0.002 285)"]
+      },
+      "hairline-dark": {
+        "role": "neutral",
+        "displayName": "Hairline (dark scheme)",
+        "cssVar": "--rule",
+        "canonical": "#27272b",
+        "tonalRamp": ["oklch(15% 0.004 285)", "oklch(26% 0.005 285)", "oklch(38% 0.005 285)", "oklch(50% 0.005 285)", "oklch(62% 0.005 285)", "oklch(76% 0.004 285)", "oklch(91% 0.003 285)", "oklch(97% 0.002 285)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display (phone)", "purpose": "Home identity line at 390px; 34px, weight 600, max 22ch." },
+      "display-lg": { "displayName": "Display (desktop)", "purpose": "Home identity line from 640px; 56px, weight 600." },
+      "headline": { "displayName": "Headline (phone)", "purpose": "Page titles on project, log, guide, index pages; 32px." },
+      "headline-lg": { "displayName": "Headline (desktop)", "purpose": "Page titles from 640px; 44px." },
+      "title": { "displayName": "Title (phone)", "purpose": "Flagship project name under its photograph; also .prose h2." },
+      "title-lg": { "displayName": "Title (desktop)", "purpose": "Flagship project name from 640px; 28px." },
+      "lede": { "displayName": "Lede (phone)", "purpose": "Identity paragraph and page descriptions in graphite; 18px, max 58-60ch." },
+      "lede-lg": { "displayName": "Lede (desktop)", "purpose": "Identity paragraph from 640px; 20px." },
+      "body": { "displayName": "Body", "purpose": "Default 16px text: list rows, summaries." },
+      "prose": { "displayName": "Prose", "purpose": "Long-form MDX body: 17px at 1.6, 68ch measure, 1.25em block spacing." },
+      "section-label": { "displayName": "Section label", "purpose": "15px graphite h2 naming a home section (Also built, Build logs, How-to guides). Also nav and footer text size." },
+      "ledger-term": { "displayName": "Ledger term", "purpose": "dt in the Ledger: PCB, Enclosure, Firmware, Software. 13px graphite 400." },
+      "ledger-fact": { "displayName": "Ledger fact", "purpose": "dd in the Ledger: the layer fact. 15px ink 500, line-height 1.375." },
+      "mono": { "displayName": "Mono", "purpose": "time and .num only: dates, the footer year; .prose code and pre. Tabular figures, 0.875em of parent." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-link", "value": "cubic-bezier(0.2, 0, 0, 1)", "purpose": "The only easing in the system; used for the .link underline colour and offset." },
+      { "name": "duration-link", "value": "160ms", "purpose": "Link underline colour and offset transition." },
+      { "name": "view-transition-flagship", "value": "@view-transition { navigation: auto } with view-transition-name: flagship-cover on the cover image", "purpose": "The one authored motion: the flagship photograph carries from home into its project page across documents. All view-transition pseudo-elements get animation: none under prefers-reduced-motion." }
+    ],
+    "focus": [
+      { "name": "focus-visible", "value": "outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px", "purpose": "Global keyboard focus ring in kapton amber. The 2px radius is the only radius in the system." }
+    ],
+    "selection": { "background": "var(--selection)", "color": "var(--fg)" },
+    "breakpoints": [
+      { "name": "sm", "value": "640px", "purpose": "The single breakpoint: gutters 20px to 32px, header 56px to 64px, ledger 2x2 to 4 columns, photographs full-bleed to in-measure, stacked to two-column sections." },
+      { "name": "measure", "value": "70rem", "purpose": "Container max-width for header, main, footer (1120px)." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Text link",
+      "kind": "custom",
+      "refersTo": "link-text",
+      "description": "Inline link with a 1px hairline underline that lifts to kapton amber on hover. The site's only interactive treatment.",
+      "html": "<p class=\"ds-p\">Read the <a class=\"ds-link\" href=\"#\">build log</a> for the motor driver.</p>",
+      "css": ".ds-p { font-family: 'Schibsted Grotesk Variable', system-ui, sans-serif; font-size: 1rem; line-height: 1.5; color: var(--fg, #151517); margin: 0; } .ds-link { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: var(--rule, #e3e3e6); transition: text-decoration-color 160ms cubic-bezier(0.2, 0, 0, 1), text-underline-offset 160ms cubic-bezier(0.2, 0, 0, 1); } .ds-link:hover { text-decoration-color: var(--accent, #b8780a); text-underline-offset: 0.3em; } .ds-link:focus-visible { outline: 2px solid var(--accent, #b8780a); outline-offset: 3px; border-radius: 2px; }"
+    },
+    {
+      "name": "Primary link",
+      "kind": "custom",
+      "refersTo": "link-text",
+      "description": "The site's primary action: a text link followed by an amber arrow glyph. The only place the accent appears at rest, and it is a mark, not a word.",
+      "html": "<a class=\"ds-primary\" href=\"#\"><span class=\"ds-primary-text\">See the build</span> <span class=\"ds-primary-arrow\" aria-hidden=\"true\">→</span></a>",
+      "css": ".ds-primary { font-family: 'Schibsted Grotesk Variable', system-ui, sans-serif; font-size: 0.9375rem; line-height: 1.5; color: var(--fg, #151517); text-decoration: none; } .ds-primary-text { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: var(--rule, #e3e3e6); transition: text-decoration-color 160ms cubic-bezier(0.2, 0, 0, 1), text-underline-offset 160ms cubic-bezier(0.2, 0, 0, 1); } .ds-primary:hover .ds-primary-text { text-decoration-color: var(--accent, #b8780a); text-underline-offset: 0.3em; } .ds-primary-arrow { color: var(--accent, #b8780a); } .ds-primary:focus-visible { outline: 2px solid var(--accent, #b8780a); outline-offset: 3px; border-radius: 2px; }"
+    },
+    {
+      "name": "Header",
+      "kind": "nav",
+      "refersTo": "link-nav",
+      "description": "64px shell header: wordmark at weight 500 left, 15px text links right. No mark, no background, no rule. Current page underlines in ink.",
+      "html": "<header class=\"ds-header\"><a class=\"ds-wordmark\" href=\"#\">made by Anirudha</a><nav aria-label=\"Primary\"><ul class=\"ds-nav\"><li><a class=\"ds-nav-link\" href=\"#\">Guides</a></li><li><a class=\"ds-nav-link\" href=\"#\" aria-current=\"page\">Logs</a></li><li><a class=\"ds-nav-link\" href=\"#\">Email</a></li></ul></nav></header>",
+      "css": ".ds-header { display: flex; align-items: center; justify-content: space-between; height: 64px; padding: 0 32px; max-width: 70rem; margin: 0 auto; font-family: 'Schibsted Grotesk Variable', system-ui, sans-serif; color: var(--fg, #151517); background: var(--bg, #ffffff); } .ds-wordmark { font-weight: 500; letter-spacing: -0.01em; font-size: 1rem; color: inherit; text-decoration: none; } .ds-nav { display: flex; align-items: center; gap: 24px; list-style: none; margin: 0; padding: 0; font-size: 0.9375rem; } .ds-nav-link { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: var(--rule, #e3e3e6); transition: text-decoration-color 160ms cubic-bezier(0.2, 0, 0, 1), text-underline-offset 160ms cubic-bezier(0.2, 0, 0, 1); } .ds-nav-link:hover { text-decoration-color: var(--accent, #b8780a); text-underline-offset: 0.3em; } .ds-nav-link[aria-current=\"page\"] { text-decoration-color: var(--fg, #151517); } .ds-nav-link:focus-visible, .ds-wordmark:focus-visible { outline: 2px solid var(--accent, #b8780a); outline-offset: 3px; border-radius: 2px; }"
+    },
+    {
+      "name": "Footer",
+      "kind": "nav",
+      "refersTo": "link-nav",
+      "description": "Hairline top, email and elsewhere links left, mono year and wordmark right in graphite.",
+      "html": "<footer class=\"ds-footer\"><ul class=\"ds-footer-links\"><li><a class=\"ds-footer-link\" href=\"#\">gaikwadaniruddha17@gmail.com</a></li><li><a class=\"ds-footer-link\" href=\"#\">Instructables</a></li><li><a class=\"ds-footer-link\" href=\"#\">Instagram</a></li><li><a class=\"ds-footer-link\" href=\"#\">YouTube</a></li></ul><p class=\"ds-footer-colophon\"><span class=\"ds-num\">2026</span> · made by Anirudha</p></footer>",
+      "css": ".ds-footer { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 32px; border-top: 1px solid var(--rule, #e3e3e6); padding-top: 24px; max-width: 70rem; margin: 0 auto; font-family: 'Schibsted Grotesk Variable', system-ui, sans-serif; font-size: 0.9375rem; line-height: 1.5; color: var(--fg, #151517); } .ds-footer-links { display: flex; flex-wrap: wrap; gap: 8px 24px; list-style: none; margin: 0; padding: 0; } .ds-footer-link { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: var(--rule, #e3e3e6); transition: text-decoration-color 160ms cubic-bezier(0.2, 0, 0, 1), text-underline-offset 160ms cubic-bezier(0.2, 0, 0, 1); } .ds-footer-link:hover { text-decoration-color: var(--accent, #b8780a); text-underline-offset: 0.3em; } .ds-footer-link:focus-visible { outline: 2px solid var(--accent, #b8780a); outline-offset: 3px; border-radius: 2px; } .ds-footer-colophon { margin: 0; color: var(--muted, #66666c); } .ds-num { font-family: 'JetBrains Mono Variable', ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; font-size: 0.875em; letter-spacing: 0; }"
+    },
+    {
+      "name": "Ledger",
+      "kind": "custom",
+      "refersTo": "ledger",
+      "description": "Signature component. The four layers of a device stated as facts: hairline above, term over fact, four columns on desktop and 2x2 on phones.",
+      "html": "<dl class=\"ds-ledger\"><div><dt class=\"ds-ledger-term\">PCB</dt><dd class=\"ds-ledger-fact\">Custom board — details to come</dd></div><div><dt class=\"ds-ledger-term\">Enclosure</dt><dd class=\"ds-ledger-fact\">Chassis — details to come</dd></div><div><dt class=\"ds-ledger-term\">Firmware</dt><dd class=\"ds-ledger-fact\">Motor control and maze solving — details to come</dd></div><div><dt class=\"ds-ledger-term\">Software</dt><dd class=\"ds-ledger-fact\">Tooling — details to come</dd></div></dl>",
+      "css": ".ds-ledger { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; row-gap: 20px; border-top: 1px solid var(--rule, #e3e3e6); padding-top: 16px; margin: 0; font-family: 'Schibsted Grotesk Variable', system-ui, sans-serif; color: var(--fg, #151517); } @media (min-width: 640px) { .ds-ledger { grid-template-columns: repeat(4, minmax(0, 1fr)); } } .ds-ledger-term { font-size: 0.8125rem; font-weight: 400; line-height: 1.5; color: var(--muted, #66666c); } .ds-ledger-fact { margin: 4px 0 0 0; font-size: 0.9375rem; font-weight: 500; line-height: 1.375; }"
+    },
+    {
+      "name": "Dated post list",
+      "kind": "custom",
+      "refersTo": "post-row",
+      "description": "Index list of logs or guides: hairline rows, mono date column, title link with graphite description. No cards.",
+      "html": "<ul class=\"ds-posts\"><li class=\"ds-post\"><a class=\"ds-post-link\" href=\"#\"><time class=\"ds-post-date\" datetime=\"2026-09-01\">1 Sept 2026</time><span><span class=\"ds-post-title\">Driving BLDC motors at micromouse scale</span><span class=\"ds-post-desc\">Why the field uses brushed DC, and what changes when you don't.</span></span></a></li><li class=\"ds-post\"><a class=\"ds-post-link\" href=\"#\"><time class=\"ds-post-date\" datetime=\"2026-08-14\">14 Aug 2026</time><span><span class=\"ds-post-title\">Chassis revision two</span><span class=\"ds-post-desc\">What broke on the first one.</span></span></a></li></ul>",
+      "css": ".ds-posts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule, #e3e3e6); font-family: 'Schibsted Grotesk Variable', system-ui, sans-serif; color: var(--fg, #151517); line-height: 1.5; } .ds-post { border-bottom: 1px solid var(--rule, #e3e3e6); padding: 20px 0; } .ds-post-link { display: grid; gap: 4px; color: inherit; text-decoration: none; } @media (min-width: 640px) { .ds-post-link { grid-template-columns: 8.5rem 1fr; gap: 24px; } } .ds-post-date { font-family: 'JetBrains Mono Variable', ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; font-size: 0.875em; letter-spacing: 0; color: var(--muted, #66666c); } .ds-post-title { font-size: 1.0625rem; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: var(--rule, #e3e3e6); transition: text-decoration-color 160ms cubic-bezier(0.2, 0, 0, 1), text-underline-offset 160ms cubic-bezier(0.2, 0, 0, 1); } .ds-post-link:hover .ds-post-title { text-decoration-color: var(--accent, #b8780a); text-underline-offset: 0.3em; } .ds-post-desc { display: block; margin-top: 4px; font-size: 0.9375rem; color: var(--muted, #66666c); } .ds-post-link:focus-visible { outline: 2px solid var(--accent, #b8780a); outline-offset: 3px; border-radius: 2px; }"
+    },
+    {
+      "name": "Section label",
+      "kind": "custom",
+      "refersTo": "section-label",
+      "description": "A 15px graphite h2 with an optional 14px link on the same baseline; the only way a home section is named. No kicker, no caps.",
+      "html": "<div class=\"ds-section-head\"><h2 class=\"ds-section-label\">Build logs</h2><a class=\"ds-section-more\" href=\"#\">All logs</a></div>",
+      "css": ".ds-section-head { display: flex; align-items: baseline; justify-content: space-between; font-family: 'Schibsted Grotesk Variable', system-ui, sans-serif; color: var(--fg, #151517); } .ds-section-label { margin: 0; font-size: 0.9375rem; font-weight: 400; line-height: 1.5; letter-spacing: 0; color: var(--muted, #66666c); } .ds-section-more { font-size: 0.875rem; color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: var(--rule, #e3e3e6); transition: text-decoration-color 160ms cubic-bezier(0.2, 0, 0, 1), text-underline-offset 160ms cubic-bezier(0.2, 0, 0, 1); } .ds-section-more:hover { text-decoration-color: var(--accent, #b8780a); text-underline-offset: 0.3em; } .ds-section-more:focus-visible { outline: 2px solid var(--accent, #b8780a); outline-offset: 3px; border-radius: 2px; }"
+    },
+    {
+      "name": "Photograph slot",
+      "kind": "custom",
+      "refersTo": "ledger",
+      "description": "16:10 cover image, edge-to-edge in the measure, square, unframed, no shadow. Carries view-transition-name: flagship-cover on the flagship.",
+      "html": "<a class=\"ds-photo-link\" href=\"#\" aria-label=\"Undeer: see the build\"><img class=\"ds-photo\" alt=\"\" src=\"data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 100'%3E%3Crect width='160' height='100' fill='%23d4d4d4'/%3E%3C/svg%3E\" style=\"view-transition-name: flagship-cover\" /></a>",
+      "css": ".ds-photo-link { display: block; } .ds-photo { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 0; box-shadow: none; } .ds-photo-link:focus-visible { outline: 2px solid var(--accent, #b8780a); outline-offset: 3px; border-radius: 2px; }"
+    },
+    {
+      "name": "Code block",
+      "kind": "custom",
+      "refersTo": "code-block",
+      "description": "The only fully bordered box in the system: 1px hairline, square corners, mono, no fill.",
+      "html": "<pre class=\"ds-pre\"><code>#define PWM_HZ 20000\nstatic const uint8_t POLE_PAIRS = 7;</code></pre>",
+      "css": ".ds-pre { margin: 0; padding: 16px 20px; border: 1px solid var(--rule, #e3e3e6); border-radius: 0; overflow-x: auto; background: transparent; color: var(--fg, #151517); font-family: 'JetBrains Mono Variable', ui-monospace, Menlo, monospace; font-size: 0.875rem; line-height: 1.55; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Bench Notebook",
+    "overview": "A senior engineer's personal site played straight: one column of text and hairlines on near-white paper, with a wide photograph slot where the object itself does the persuading. Nothing is dressed up. There are no cards, no panels, no gradients, no shadows; the only ornament is a single kapton-amber accent that appears on marks (a hover rule, a focus ring, an arrow) and never on running text. Ink and paper invert cleanly at night: the dark scheme follows the OS and keeps the same structure, only the surface changes.\n\nDensity is editorial rather than dashboard. Sections are separated by space (48–96px) and by 1px rules, never by boxes. Type carries the hierarchy with three weights (400, 500, 600) and tight display tracking; JetBrains Mono appears only where a number needs to line up (dates, the footer year). Motion is nearly absent: one authored cross-document view transition carries the flagship photograph from the home page into its project page, and link rules lift on hover. Nothing else enters, fades, or parallaxes.\n\nConfirmed visual rejections: the dark-neon dev portfolio with a repo-card grid, the cream editorial studio page, PCB-trace motifs, terminal or instrument chrome, hero gradients and glows, countdowns, invented numbers, and kicker/eyebrow labels above headings.",
+    "keyCharacteristics": [
+      "One column, 70rem measure, 20/32px gutters, left-aligned throughout.",
+      "Neutrals plus one accent (kapton amber) reserved for interactive marks.",
+      "Light by default, dark by OS `prefers-color-scheme`; same tokens, swapped values.",
+      "Grouping by hairline rules and space; no cards, no fills, no shadows.",
+      "Square corners everywhere; photographs edge-to-edge within the measure, full-bleed on phones.",
+      "Type ramp in Schibsted Grotesk at 400/500/600; mono only for dates and numbers.",
+      "One motion: the flagship cover's view transition. Hover moves the link rule; nothing else moves."
+    ],
+    "rules": [
+      { "name": "The Marks-Only Rule", "body": "Kapton amber appears only on interactive marks: the hover underline, the focus ring, the arrow after a primary link. It is never the colour of a word, a heading, a background, or a decorative shape. If a screen shows amber at rest with nothing to hover or focus, it is wrong.", "section": "colors" },
+      { "name": "The One Surface Rule", "body": "The whole page is one background. There are no tinted panels, no card fills, no alternating bands. Regions are told apart by a hairline and by space.", "section": "colors" },
+      { "name": "The Scheme Follows the OS Rule", "body": "Dark mode is `prefers-color-scheme` on the same six tokens; there is no toggle and no third theme. Every new colour must be authored as a light/dark pair or not at all.", "section": "colors" },
+      { "name": "The Three Weights Rule", "body": "400 for text, 500 for headings and emphasised facts, 600 for the display line. No 300, no 700, no italics as hierarchy.", "section": "typography" },
+      { "name": "The Mono Measures Rule", "body": "JetBrains Mono is for dates, years, numbers, and code. It is never a heading, a label, or a stylistic voice.", "section": "typography" },
+      { "name": "The No-Kicker Rule", "body": "Nothing sits above a heading. No uppercase eyebrow, no category tag, no tracked-out label. A section is named by a 15px graphite h2 and nothing else.", "section": "typography" },
+      { "name": "The No-Shadow Rule", "body": "Nothing casts a shadow, at rest or on hover. A new surface that needs separation gets a hairline, not an elevation.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep everything on one paper surface and separate groups with a 1px hairline in `{colors.hairline}` or with space (48/64/80/96px), never with a fill.",
+      "Do reserve kapton amber for the hover underline, the focus ring, and the arrow after a primary link.",
+      "Do author every colour as a light/dark pair on the six tokens (`--bg`, `--fg`, `--muted`, `--rule`, `--accent`, `--selection`) and let `prefers-color-scheme` select it.",
+      "Do set display at 600/-0.03em, headings at 500/-0.02em to -0.03em, and text at 400; stop at those three weights.",
+      "Do put dates, years, and numbers in JetBrains Mono with tabular figures at 0.875em, and leave every word in Schibsted Grotesk.",
+      "Do run photographs edge-to-edge at 16:10 within the 70rem measure, full-bleed on phones, square, unframed.",
+      "Do caption a device with the Ledger: hairline above, four terms over four facts, 2×2 on phones.",
+      "Do cap text by measure (22ch display, 58–60ch lede, 68ch prose) rather than stretching it to the column.",
+      "Do supply flagship photographs shot or cropped on a mid-grey or dark surface, since the slot has no inset or hairline in dark mode."
+    ],
+    "donts": [
+      "Don't put a kicker, eyebrow, uppercase tag, or tracked-out label above any heading.",
+      "Don't draw PCB traces, circuit motifs, instrument chrome, terminal windows, or any concept costume.",
+      "Don't use gradients, glows, blurs, or box shadows anywhere, at rest or on hover.",
+      "Don't wrap content in cards, tiles, or panels; no repo-card grids, no bordered boxes except `pre`.",
+      "Don't round a corner; the only radius in the system is the 2px on the focus ring.",
+      "Don't add a countdown, a metric, a testimonial, a logo wall, or any number that is not a fact about a build.",
+      "Don't use amber for text, headings, backgrounds, or icons at rest.",
+      "Don't add motion beyond the flagship cover's view transition and the link-rule hover; nothing fades in, slides, or parallaxes.",
+      "Don't show a nav item for an empty section, and don't add Store until a product is purchasable.",
+      "Don't use a system display face, glyph icons, or an icon font; the arrow after \"See the build\" is a text glyph and the site has no other icons."
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+---
+// One log or guide. Thin on purpose: the MDX body is the page.
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+interface Props {
+  title: string;
+  description: string;
+  date: Date;
+  cover?: ImageMetadata;
+}
+const { title, description, date, cover } = Astro.props;
+const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" });
+---
+
+<article class="pt-10 sm:pt-16">
+  <header class="max-w-[60ch]">
+    <p class="text-[0.875rem] text-muted"><time datetime={date.toISOString()}>{fmt.format(date)}</time></p>
+    <h1 class="mt-3 text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]">{title}</h1>
+    <p class="mt-4 text-[1.125rem] text-muted">{description}</p>
+  </header>
+  {cover && (
+    <div class="-mx-5 mt-10 sm:mx-0">
+      <Image src={cover} alt="" widths={[640, 960, 1280, 1600, 2240]} sizes="(min-width: 1184px) 1120px, 100vw" loading="eager" class="w-full" />
+    </div>
+  )}
+  <div class="prose mt-12">
+    <slot />
+  </div>
+</article>

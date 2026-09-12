@@ -1,0 +1,27 @@
+---
+// Dated list shared by the logs and guides indexes and the home page.
+interface Entry {
+  id: string;
+  data: { title: string; description: string; date: Date };
+}
+interface Props {
+  entries: Entry[];
+  base: "/logs" | "/guides";
+}
+const { entries, base } = Astro.props;
+const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+---
+
+<ul class="border-t border-rule">
+  {entries.map((e) => (
+    <li class="border-b border-rule py-5">
+      <a href={`${base}/${e.id}`} class="grid gap-1 sm:grid-cols-[8.5rem_1fr] sm:gap-6">
+        <time datetime={e.data.date.toISOString()} class="text-muted">{fmt.format(e.data.date)}</time>
+        <span>
+          <span class="link text-[1.0625rem]">{e.data.title}</span>
+          <span class="mt-1 block text-[0.9375rem] text-muted">{e.data.description}</span>
+        </span>
+      </a>
+    </li>
+  ))}
+</ul>

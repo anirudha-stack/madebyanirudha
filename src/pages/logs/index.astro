@@ -1,0 +1,19 @@
+---
+import { getCollection } from "astro:content";
+import PostList from "../../components/PostList.astro";
+import Base from "../../layouts/Base.astro";
+
+const entries = (await getCollection("logs", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+---
+
+<Base title="Build logs" description="What I made, how it went, and what broke along the way.">
+  <section class="pt-10 sm:pt-16">
+    <h1 class="text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]">Build logs</h1>
+    <p class="mt-4 max-w-[60ch] text-[1.125rem] text-muted">What I made, how it went, and what broke along the way.</p>
+    <div class="mt-10">
+      <PostList entries={entries} base="/logs" />
+    </div>
+  </section>
+</Base>

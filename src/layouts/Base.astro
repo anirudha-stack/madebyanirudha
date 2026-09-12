@@ -1,0 +1,43 @@
+---
+import "../styles/global.css";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import { site } from "../site";
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Absolute URL of a social image; the home page passes the flagship. */
+  image?: string;
+}
+
+const { title, description = site.description, image } = Astro.props;
+const fullTitle = title ? `${title} — ${site.wordmark}` : site.wordmark;
+const canonical = new URL(Astro.url.pathname, site.domain).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.wordmark} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={image} />}
+    <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <Header />
+    <main class="mx-auto w-full max-w-measure flex-1 px-5 sm:px-8">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
