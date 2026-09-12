@@ -12,3 +12,6 @@ backups/
 
 # astro
 .astro/
+
+# impeccable launcher downloads its binary on first run
+.claude/skills/impeccable/scripts/bin/
