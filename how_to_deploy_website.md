@@ -33,17 +33,22 @@ personal-site traffic, and the free limits stop rather than bill.
 
 ## 2. What is deployed today
 
-A single static page. `wrangler.jsonc` has **no `main` entry point**, so
-Cloudflare serves `./public` straight off the edge — the Worker is never
-invoked, nothing is billable, and there is no request cap.
+An Astro static site. `npm run build` prerenders every page into `./dist` and
+copies `./public` into it verbatim. `wrangler.jsonc` has **no `main` entry
+point**, so Cloudflare serves `./dist` straight off the edge — the Worker is
+never invoked, nothing is billable, and there is no request cap.
 
 ```
-public/index.html   the page
-public/_headers     cache + security headers
-wrangler.jsonc      the entire infrastructure definition
+src/pages/*.astro     pages (index.astro is the coming-soon page until launch)
+src/content/**        guides and build logs as MDX; schema in src/content.config.ts
+public/_headers       cache + security headers (copied into dist/)
+astro.config.mjs      static output, MDX, Tailwind v4
+wrangler.jsonc        the entire infrastructure definition
 ```
 
 That is the whole deployment. There is no container, no server, no origin.
+`dist/` is a build artifact and is gitignored; CI builds it before every
+dry-run, preview, and deploy.
 
 ---
 
@@ -74,7 +79,7 @@ Google account. Logging `wrangler` into the wrong account produces a confusing
 ```bash
 npm ci
 npx wrangler login      # once, as madebyanirudha@gmail.com
-npx wrangler deploy
+npm run deploy          # astro build && wrangler deploy
 ```
 
 `wrangler.jsonc` declares both custom domains. Cloudflare creates and manages
@@ -83,8 +88,9 @@ their proxied DNS records itself — including evicting whatever was there befor
 Validate a change without deploying:
 
 ```bash
-npx wrangler deploy --dry-run   # no credentials needed
-npx wrangler dev                # local preview on localhost:8787
+npm run build && npx wrangler deploy --dry-run   # no credentials needed
+npm run dev                                      # Astro dev server, localhost:4321
+npm run preview                                  # build, then wrangler dev on localhost:8787
 ```
 
 ---
@@ -93,12 +99,12 @@ npx wrangler dev                # local preview on localhost:8787
 
 `.github/workflows/ci.yml` — on pull request:
 
-- `validate` — `npm ci`, `wrangler deploy --dry-run`, content assertion.
+- `validate` — `npm ci`, `npm run build`, `wrangler deploy --dry-run`, content assertion.
   **Needs no credentials**, so it is green on a fresh clone.
 - `preview` — uploads a version that takes **no traffic** and comments the
   preview URL on the PR. Skipped until `CLOUDFLARE_ACCOUNT_ID` is set.
 
-`.github/workflows/deploy.yml` — on push to `main`: `wrangler deploy`, then a
+`.github/workflows/deploy.yml` — on push to `main`: `npm run build`, `wrangler deploy`, then a
 smoke check against the live domain.
 
 **Required GitHub configuration:**
@@ -118,11 +124,12 @@ the variable set but the secret missing, the deploy job runs and fails.
 
 This is the migration that was designed for, and it is deliberately small.
 
-**Step 1 — add a Worker script.** In `wrangler.jsonc`:
+**Step 1 — add a Worker script.** Install `@astrojs/cloudflare`, mark only the
+routes that need it `prerender = false`, and in `wrangler.jsonc`:
 
 ```jsonc
-"main": "src/index.ts",
-"assets": { "directory": "./public", "binding": "ASSETS" }
+"main": "dist/_worker.js/index.js",
+"assets": { "directory": "./dist", "binding": "ASSETS" }
 ```
 
 Static requests still bypass the Worker and stay free. Only routes your code

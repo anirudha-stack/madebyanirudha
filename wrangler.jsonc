@@ -2,18 +2,21 @@
   // Cloudflare Worker — madebyanirudha.in
   // Account: madebyanirudha@gmail.com (must match the account holding the zone).
   //
-  // Phase 0: a pure static site. No `main` entry point, so Cloudflare serves
-  // ./public straight off the edge with no Worker invocation and no cost.
+  // Phase 1: an Astro static site. `npm run build` writes ./dist (prerendered
+  // pages plus everything in ./public, e.g. _headers). No `main` entry point,
+  // so Cloudflare serves ./dist straight off the edge with no Worker
+  // invocation and no cost.
   //
-  // When the full site lands, add here and nothing else moves:
-  //   "main": "src/index.ts",
-  //   "assets": { "directory": "./public", "binding": "ASSETS" },
+  // When a route needs the server (store checkout), add @astrojs/cloudflare
+  // for that route only; the adapter emits the Worker and this becomes:
+  //   "main": "dist/_worker.js/index.js",
+  //   "assets": { "directory": "./dist", "binding": "ASSETS" },
   // ...then the same project serves static assets AND server-side routes.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "madebyanirudha",
   "compatibility_date": "2026-08-24",
   "assets": {
-    "directory": "./public",
+    "directory": "./dist",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   },

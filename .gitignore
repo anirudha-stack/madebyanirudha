@@ -9,3 +9,6 @@ backups/
 
 # wrangler
 .wrangler/
+
+# astro
+.astro/

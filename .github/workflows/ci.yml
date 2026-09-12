@@ -24,6 +24,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run build
 
       # Parses wrangler.jsonc and builds the asset manifest without any network
       # call or credential. Catches a malformed config before it reaches main.
@@ -32,8 +33,8 @@ jobs:
 
       - name: Page still renders
         run: |
-          grep -q "made by" public/index.html \
-            || { echo "::error::index.html lost its content"; exit 1; }
+          grep -q "made by" dist/index.html \
+            || { echo "::error::built index.html lost its content"; exit 1; }
 
   # Uploads a preview version and comments the URL on the PR.
   # Skipped until CLOUDFLARE_ACCOUNT_ID is set (see how_to_deploy_website.md §5).
@@ -49,6 +50,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run build
 
       # A version is uploaded but takes no traffic — production keeps serving
       # whatever `deploy` last promoted.
