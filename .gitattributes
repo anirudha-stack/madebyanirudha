@@ -1,0 +1,22 @@
+# Normalise line endings: LF in the repo and in working copies on every OS.
+* text=auto eol=lf
+
+# Windows-only scripts need CRLF to run.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binaries.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.stl binary
