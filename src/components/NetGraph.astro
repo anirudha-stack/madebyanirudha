@@ -5,10 +5,10 @@
 // One shared 10 s clock drives every keyframe, so nothing needs JS beyond
 // the in-view trigger that adds `.is-in`.
 const layers = [3, 5, 5, 2];
-const W = 560;
-const H = 260;
-const colX = (i: number) => 160 + i * 80;
-const rowY = (n: number, j: number) => H / 2 + (j - (n - 1) / 2) * 44;
+const W = 532;
+const H = 280;
+const colX = (i: number) => 130 + i * 100;
+const rowY = (n: number, j: number) => H / 2 + (j - (n - 1) / 2) * 48;
 const nodes = layers.flatMap((n, i) =>
   Array.from({ length: n }, (_, j) => ({ x: colX(i), y: rowY(n, j), layer: i, row: j })),
 );
@@ -24,7 +24,8 @@ const curve = ({ a, b }: (typeof edges)[number]) =>
 // Input: one token per input node, and the number it becomes.
 const tokens = ["Good", "morning", "!"];
 const values = ["0.82", "0.14", "0.61"];
-const chip = { x: 30, w: 70, h: 22 };
+const chip = { x: 6, w: 78, h: 28 };
+const font = 14;
 const inputs = nodes.filter((n) => n.layer === 0);
 const outputs = nodes.filter((n) => n.layer === layers.length - 1);
 const stagger = (i: number) => `animation-delay: ${i * 300}ms`;
@@ -55,7 +56,7 @@ const stagger = (i: number) => `animation-delay: ${i * 300}ms`;
       <circle
         cx={n.x}
         cy={n.y}
-        r="6"
+        r="7"
         fill="var(--bg)"
         stroke="currentColor"
         class:list={["node", `n${n.layer}`, n.layer === layers.length - 1 && n.row > 0 && "loser"]}
@@ -65,25 +66,25 @@ const stagger = (i: number) => `animation-delay: ${i * 300}ms`;
   </g>
 
   <!-- Input: token chips that become numbers, then dots that enter the network. -->
-  <g font-family="var(--font-mono)" font-size="11">
+  <g font-family="var(--font-mono)" font-size={font}>
     {inputs.map((n, i) => (
       <>
         <g class="tok" style={stagger(i)}>
           <rect x={chip.x} y={n.y - chip.h / 2} width={chip.w} height={chip.h} rx="4" fill="none" stroke="var(--rule)" />
-          <text x={chip.x + chip.w / 2} y={n.y + 4} text-anchor="middle" fill="currentColor">{tokens[i]}</text>
+          <text x={chip.x + chip.w / 2} y={n.y + 5} text-anchor="middle" fill="currentColor">{tokens[i]}</text>
         </g>
-        <text x={chip.x + chip.w / 2} y={n.y + 4} text-anchor="middle" fill="var(--accent)" class="emb" style={stagger(i)}>
+        <text x={chip.x + chip.w / 2} y={n.y + 5} text-anchor="middle" fill="var(--accent)" class="emb" style={stagger(i)}>
           {values[i]}
         </text>
-        <circle cx={chip.x + chip.w + 6} cy={n.y} r="2.5" fill="var(--accent)" class="dot glow" style={`${stagger(i)}; --dx: ${n.x - 8 - (chip.x + chip.w + 6)}px`} />
+        <circle cx={chip.x + chip.w + 6} cy={n.y} r="3" fill="var(--accent)" class="dot glow" style={`${stagger(i)}; --dx: ${n.x - 8 - (chip.x + chip.w + 6)}px`} />
       </>
     ))}
   </g>
 
   <!-- Output label beside the winning node. -->
-  <g class="out" font-family="var(--font-mono)" font-size="11">
-    <text x={outputs[0].x + 16} y={outputs[0].y + 4} fill="var(--muted)">Intent =</text>
-    <text x={outputs[0].x + 16 + 9 * 6.6} y={outputs[0].y + 4} fill="var(--accent)" font-weight="600" class="glow">Greeting</text>
+  <g class="out" font-family="var(--font-mono)" font-size={font}>
+    <text x={outputs[0].x + 18} y={outputs[0].y - 4} fill="var(--muted)">Intent =</text>
+    <text x={outputs[0].x + 18} y={outputs[0].y + 13} fill="var(--accent)" font-weight="600" class="glow">Greeting</text>
   </g>
 </svg>
 
@@ -251,9 +252,9 @@ const stagger = (i: number) => `animation-delay: ${i * 300}ms`;
     95%, 100% { fill: var(--bg); stroke: currentColor; filter: none; }
   }
   @keyframes lit3 {
-    0%, 63% { fill: var(--bg); stroke: currentColor; r: 6; filter: none; }
-    66%, 90% { fill: var(--accent); stroke: var(--accent); r: 8; filter: var(--neon); }
-    95%, 100% { fill: var(--bg); stroke: currentColor; r: 6; filter: none; }
+    0%, 63% { fill: var(--bg); stroke: currentColor; r: 7; filter: none; }
+    66%, 90% { fill: var(--accent); stroke: var(--accent); r: 9.5; filter: var(--neon); }
+    95%, 100% { fill: var(--bg); stroke: currentColor; r: 7; filter: none; }
   }
   @keyframes lose {
     0%, 63% { stroke: currentColor; }

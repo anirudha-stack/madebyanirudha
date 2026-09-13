@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import EmptyState from "../../components/EmptyState.astro";
 import PostList from "../../components/PostList.astro";
 import Base from "../../layouts/Base.astro";
 
@@ -13,7 +14,10 @@ const entries = (await getCollection("guides", ({ data }) => !data.draft)).sort(
     <h1 class="text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]">How-to guides</h1>
     <p class="mt-4 max-w-[60ch] text-[1.125rem] text-muted">Step-by-step builds you can reproduce, with parts and files.</p>
     <div class="mt-10">
-      <PostList entries={entries} base="/guides" />
+      {entries.length === 0 && (
+        <EmptyState title="Still on the bench." body="The first guide is being written and tested. A guide only ships once somebody else can follow it, which is the slow part." />
+      )}
+      {entries.length > 0 && <PostList entries={entries} base="/guides" />}
     </div>
   </section>
 </Base>

@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import EmptyState from "../../components/EmptyState.astro";
 import PostList from "../../components/PostList.astro";
 import Base from "../../layouts/Base.astro";
 
@@ -13,7 +14,10 @@ const entries = (await getCollection("logs", ({ data }) => !data.draft)).sort(
     <h1 class="text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]">Build logs</h1>
     <p class="mt-4 max-w-[60ch] text-[1.125rem] text-muted">What I made, how it went, and what broke along the way.</p>
     <div class="mt-10">
-      <PostList entries={entries} base="/logs" />
+      {entries.length === 0 && (
+        <EmptyState title="Still on the bench." body="The first build log is being written. Until then the Undeer project page has the photographs, and the elsewhere links have the day-to-day." />
+      )}
+      {entries.length > 0 && <PostList entries={entries} base="/logs" />}
     </div>
   </section>
 </Base>

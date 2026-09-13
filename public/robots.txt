@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://madebyanirudha.in/sitemap-index.xml

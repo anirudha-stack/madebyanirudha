@@ -98,7 +98,7 @@ narrative), "project" (a finished thing, may have both), "store".
 ## Brand Commitments
 
 - Name: **madebyanirudha** / "made by Anirudha". Domain `madebyanirudha.in`.
-- Contact: gaikwadaniruddha17@gmail.com (public on the site).
+- Contact: madebyanirudha@gmail.com (public on the site).
 - Elsewhere: instructables.com/member/madebyanirudha, instagram.com/madebyanirudha,
   youtube.com/@madebyanirudha. No GitHub or LinkedIn on the site.
 - **Nothing visual from the coming-soon page is binding.** The green accent,

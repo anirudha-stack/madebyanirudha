@@ -12,6 +12,10 @@ const links = [{ label: site.email, href: `mailto:${site.email}` }, ...site.link
         <li><a class="link" href={l.href} rel={l.href.startsWith("http") ? "me noopener" : undefined}>{l.label}</a></li>
       ))}
     </ul>
-    <p class="text-muted"><span class="num">{year}</span> · {site.wordmark}</p>
+    <p class="flex flex-wrap gap-x-5 gap-y-2 text-muted">
+      <a class="link" href="/privacy">Privacy</a>
+      <a class="link" href="/rss.xml">RSS</a>
+      <span><span class="num">{year}</span> · {site.wordmark}</span>
+    </p>
   </div>
 </footer>

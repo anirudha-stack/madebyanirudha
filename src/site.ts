@@ -3,7 +3,7 @@ export const site = {
   name: "Anirudha",
   wordmark: "made by Anirudha",
   domain: "https://madebyanirudha.in",
-  email: "gaikwadaniruddha17@gmail.com",
+  email: "madebyanirudha@gmail.com",
   identity: "Software that thinks. Hardware that moves.",
   description:
     "Anirudha designs the circuit board, the enclosure, the firmware and the software — the whole device. Build logs, how-to guides, and the things he makes.",

@@ -1,0 +1,157 @@
+---
+// The empty-state drawing: two gears in mesh, one missing a tooth, so the
+// pair turns, catches, slips, and turns again. Sits on any page whose
+// content does not exist yet. Line art in the site's own tokens.
+interface Props {
+  class?: string;
+}
+const { class: className = "" } = Astro.props;
+
+// A gear outline as a path. `skip` leaves one tooth out at the root.
+const gear = (teeth: number, root: number, tip: number, skip = -1) => {
+  const pitch = (Math.PI * 2) / teeth;
+  const pt = (r: number, a: number) => `${(r * Math.cos(a)).toFixed(1)} ${(r * Math.sin(a)).toFixed(1)}`;
+  let d = "";
+  for (let i = 0; i < teeth; i++) {
+    const a = i * pitch;
+    const [a0, a1, a2, a3] = [a - pitch * 0.21, a - pitch * 0.1, a + pitch * 0.1, a + pitch * 0.21];
+    const first = i === 0 ? "M" : "L";
+    if (i === skip) d += ` ${first} ${pt(root, a0)} L ${pt(root, a3)}`;
+    else d += ` ${first} ${pt(root, a0)} L ${pt(tip, a1)} L ${pt(tip, a2)} L ${pt(root, a3)}`;
+  }
+  return `${d} Z`;
+};
+// Geometry. Big gear at B, small at S; the mesh line joins their centres.
+// Big: 12 teeth, 30 deg/s. Small: 8 teeth, 1.5x faster the other way, 45 deg/s.
+// The small gear is missing tooth 2, so once per revolution (8 s) the big
+// tooth meets nothing and the small gear stands still for one big pitch (1 s)
+// while the big gear grinds past. Cycle: 8 s turning + 1 s stalled = 9 s.
+const B = { x: 92, y: 84 };
+const S = { x: 180, y: 60 };
+const deg = (r: number) => (r * 180) / Math.PI;
+const meshFromS = deg(Math.atan2(B.y - S.y, B.x - S.x)); // direction of the mesh line seen from S
+const missing = 2;
+const smallPhase = meshFromS - missing * 45; // puts the missing tooth on the mesh line at t = 0
+const big = gear(12, 50, 59);
+const small = gear(8, 32, 40, missing);
+// Where the teeth touch: on the mesh line, at the pitch radii.
+const pitchB = 55;
+const dir = { x: S.x - B.x, y: S.y - B.y };
+const len = Math.hypot(dir.x, dir.y);
+const contact = { x: B.x + (dir.x / len) * pitchB, y: B.y + (dir.y / len) * pitchB };
+// Sparks: thrown from the contact point while the big tooth grinds through the gap.
+const sparks = [
+  [22, -26], [32, -10], [-16, -30], [36, 12], [-30, 18], [12, -36], [-36, -8], [26, 28], [4, 34], [-22, -18],
+];
+// The tooth that came off, drawn as its own little shape.
+const tooth = "M -5 4 L -2.5 -4 L 2.5 -4 L 5 4 Z";
+---
+
+<svg
+  viewBox="0 0 240 180"
+  class:list={["gears", className]}
+  role="img"
+  aria-label="Two meshing gears. The small one is missing a tooth, so once a turn it stops while the big one grinds past in a shower of sparks."
+  style={`--small-phase: ${smallPhase.toFixed(2)}deg`}
+>
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+    <g transform={`translate(${B.x} ${B.y})`}>
+      <g class="big">
+        <path d={big} />
+        <circle r="30" class="detail" />
+        <circle r="8" fill="var(--bg)" />
+        <path d="M -30 0 H -8 M 8 0 H 30 M 0 -30 V -8 M 0 8 V 30" class="detail" />
+      </g>
+    </g>
+    <g transform={`translate(${S.x} ${S.y})`}>
+      <g class="small">
+        <path d={small} />
+        <circle r="16" class="detail" />
+        <circle r="5" fill="var(--bg)" />
+      </g>
+    </g>
+    <path d={tooth} transform="translate(208 128) rotate(-32)" class="detail loose" />
+  </g>
+  <g transform={`translate(${contact.x.toFixed(1)} ${contact.y.toFixed(1)})`} class="sparks" fill="var(--accent)">
+    {sparks.map(([x, y], i) => (
+      <circle r={i % 3 === 0 ? 3 : 2.2} class="spark" style={`--sx: ${x}px; --sy: ${y}px; animation-delay: ${(i * 0.06).toFixed(2)}s`} />
+    ))}
+  </g>
+</svg>
+
+<style>
+  .gears {
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --cycle: 9s; /* 8 s turning + 1 s stalled */
+    overflow: visible;
+  }
+  .detail {
+    stroke: var(--muted);
+  }
+  /* Rotate about each gear's own origin, which the parent translate placed. */
+  .big,
+  .small {
+    transform-box: view-box;
+    transform-origin: 0 0;
+  }
+  .big {
+    animation: turn 12s linear infinite;
+  }
+  .small {
+    animation: mesh var(--cycle) linear infinite;
+  }
+  .sparks {
+    filter: drop-shadow(0 0 2px var(--accent)) drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 12px var(--accent));
+  }
+  .spark {
+    opacity: 0;
+    animation: spark var(--cycle) cubic-bezier(0.1, 0.6, 0.4, 1) infinite;
+  }
+  @keyframes turn {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  /* 360 deg over the first 8/9 of the cycle, then hold: the missing tooth is
+     on the mesh line and there is nothing for the big tooth to push. */
+  @keyframes mesh {
+    0% {
+      transform: rotate(var(--small-phase));
+    }
+    88.889% {
+      transform: rotate(calc(var(--small-phase) - 360deg));
+    }
+    100% {
+      transform: rotate(calc(var(--small-phase) - 360deg));
+    }
+  }
+  /* Thrown during the stall, 8.0 s to 9.0 s of the cycle. */
+  @keyframes spark {
+    0%, 88.5% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.6);
+    }
+    89.5% {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+    94% {
+      opacity: 1;
+      transform: translate(var(--sx), var(--sy)) scale(0.8);
+    }
+    96%, 100% {
+      opacity: 0;
+      transform: translate(calc(var(--sx) * 1.2), calc(var(--sy) * 1.2 + 6px)) scale(0.3);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .big,
+    .small,
+    .spark {
+      animation: none;
+    }
+    .small {
+      transform: rotate(var(--small-phase));
+    }
+  }
+</style>

@@ -1,0 +1,90 @@
+---
+import Base from "../layouts/Base.astro";
+import { site } from "../site";
+
+// Keep this page true. If the site starts collecting anything new (analytics,
+// a form, a store), update the relevant section and the date below.
+const updated = new Date("2026-09-14");
+const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" });
+---
+
+<Base title="Privacy" description="What this site does and does not collect about you.">
+  <article class="pt-10 sm:pt-16">
+    <header class="max-w-[60ch]">
+      <h1 class="text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]">Privacy</h1>
+      <p class="mt-4 text-[1.125rem] text-muted">
+        The short version: this site does not track you. Here is the long version.
+      </p>
+      <p class="mt-3 text-[0.875rem] text-muted">
+        Last updated <time datetime={updated.toISOString()}>{fmt.format(updated)}</time>
+      </p>
+    </header>
+
+    <div class="prose mt-12">
+      <h2>Who runs this site</h2>
+      <p>
+        madebyanirudha.in is a personal site run by Anirudha, an individual, not a company. For anything on this
+        page, write to <a href={`mailto:${site.email}`}>{site.email}</a>.
+      </p>
+
+      <h2>What the site collects</h2>
+      <p>Nothing, by design.</p>
+      <ul>
+        <li><strong>No cookies.</strong> The site sets none and needs none.</li>
+        <li><strong>No analytics or tracking.</strong> No Google Analytics, no pixels, no fingerprinting, no third-party scripts.</li>
+        <li><strong>No accounts or forms.</strong> There is nothing to sign up for and nothing to fill in.</li>
+        <li><strong>No third-party fonts or embeds.</strong> Fonts are served from this domain. Photographs and drawings are hosted here.</li>
+      </ul>
+      <p>
+        Your browser may keep its own copy of pages and images in its cache so they load faster next time. That is
+        your browser's behaviour, on your device, and you control it.
+      </p>
+
+      <h2>Hosting</h2>
+      <p>
+        The site is served by <a href="https://www.cloudflare.com/" rel="noopener">Cloudflare</a>. To deliver pages
+        and to block abuse, Cloudflare processes the technical details of each request: your IP address, the page
+        requested, the time, your browser's user-agent string, and the country the request came from. Cloudflare's
+        handling of that data is described in its own <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener">privacy policy</a>.
+      </p>
+      <p>
+        I can see aggregate traffic numbers and short-lived request logs in the Cloudflare dashboard. I use them only to
+        keep the site up and to notice when something is broken. I do not export them, combine them with anything
+        else, or share them.
+      </p>
+
+      <h2>Email</h2>
+      <p>
+        If you email me, I will have your email address and whatever you wrote. I keep it in my mailbox for as long
+        as the conversation is useful, and I do not add you to any list. Ask, and I will delete it.
+      </p>
+
+      <h2>Links to other places</h2>
+      <p>
+        The site links to my accounts on Instagram, YouTube and Instructables, and occasionally to other sites in
+        guides and build logs. Once you follow a link you are on their site, under their policies. I do not embed
+        their players or widgets here, so simply reading this site sends nothing to them.
+      </p>
+
+      <h2>When the store opens</h2>
+      <p>
+        I plan to sell some of the things I make. When that happens, checkout will run through a payment provider, and
+        an order will necessarily involve your name, delivery address, and payment details handled by that provider.
+        This page will be updated before the store goes live to say exactly who is involved and what is kept.
+      </p>
+
+      <h2>Your rights</h2>
+      <p>
+        Whatever the law in your country calls them, the practical version is: you can ask what I have about you (for
+        almost everyone, the answer is nothing), ask me to delete it, or ask a question. Email{" "}
+        <a href={`mailto:${site.email}`}>{site.email}</a>.
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        If anything above changes, this page changes with it and the date at the top moves. There is no separate
+        notice.
+      </p>
+    </div>
+  </article>
+</Base>

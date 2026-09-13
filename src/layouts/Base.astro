@@ -31,11 +31,18 @@ const canonical = new URL(Astro.url.pathname, site.domain).href;
     <meta property="og:url" content={canonical} />
     {image && <meta property="og:image" content={image} />}
     <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f0f10" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title={site.wordmark} href="/rss.xml" />
   </head>
   <body>
+    <a href="#main" class="skip">Skip to content</a>
     <Header />
-    <main class="mx-auto w-full max-w-measure flex-1 px-5 sm:px-8">
+    <main id="main" class="mx-auto w-full max-w-measure flex-1 px-5 sm:px-8" tabindex="-1">
       <slot />
     </main>
     <Footer />

@@ -112,6 +112,22 @@
   }
 }
 
+/* Keyboard users get a way past the header. Visible only when focused. */
+.skip {
+  position: absolute;
+  left: 1rem;
+  top: 0.5rem;
+  z-index: 100;
+  padding: 0.5rem 0.75rem;
+  background: var(--fg);
+  color: var(--bg);
+  transform: translateY(-200%);
+  transition: transform 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+.skip:focus {
+  transform: none;
+}
+
 /* Text links: a rule that sits low and lifts to the accent on hover. */
 .link {
   text-decoration: underline;
