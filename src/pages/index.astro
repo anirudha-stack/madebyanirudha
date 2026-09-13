@@ -51,6 +51,12 @@ const steps = [
     title: "Then it talks.",
     body: "Tools to configure it, log it, and see what it is thinking. The part the day job is good for.",
   },
+  {
+    id: "device",
+    name: "Device",
+    title: "Then it is one thing.",
+    body: "Board in the box, chip on the board, screen on the lid. Four layers you can hold in one hand, and hand to someone else.",
+  },
 ];
 
 const elsewhere = [
@@ -668,7 +674,10 @@ const elsewhere = [
   const steps = $$("[data-step]");
   const plates = $$("[data-plate]");
   const labels = $$("[data-plate-label]");
+  const stack = document.querySelector<SVGElement>("[data-stack]");
   const setStep = (n: number) => {
+    // The last step has no plate of its own: it collapses the four into one.
+    stack?.classList.toggle("is-compact", n > plates.length);
     plates.forEach((p, i) => {
       p.classList.toggle("is-on", i < n);
       p.classList.toggle("is-active", i === n - 1);

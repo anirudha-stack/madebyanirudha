@@ -2,7 +2,12 @@
 // The device, exploded: four isometric plates, one per layer. Plates are
 // drawn from bottom (PCB) to top (software) and the page turns them on one
 // at a time as the visitor scrolls through the matching step. Ghost outlines
-// stay visible so the empty stack still reads as a stack.
+// stay visible so the empty stack still reads as a stack. A final step adds
+// `.is-compact` to the svg and the plates collapse into one object.
+//
+// Each plate is alive once it is on: current flows along the traces, the
+// enclosure prints itself layer by layer, the chip's status LEDs blink, the
+// software cursor ticks.
 //
 // Plate-local coordinates are a 140-unit square centred at the origin;
 // `iso` projects them to screen space.
@@ -15,29 +20,41 @@ const diamond = (h: number) => `M ${poly([[-h, -h], [h, -h], [h, h], [-h, h]])} 
 const H = 70; // half-size of a plate
 const outline = diamond(H);
 
-// PCB: traces, pads, mounting holes.
+// PCB: traces, pads, mounting holes. Each trace is its own path so current
+// can flow along it independently.
 const traces = [
   `M ${poly([[-52, -44], [4, -44], [24, -24]])}`,
   `M ${poly([[-52, -14], [36, -14]])}`,
   `M ${poly([[-52, 16], [-6, 16], [14, 36]])}`,
   `M ${poly([[42, 10], [42, 50]])}`,
   `M ${poly([[-30, 48], [10, 48]])}`,
-].join(" ");
+];
 const pads: [number, number][] = [[-52, -44], [24, -24], [-52, -14], [36, -14], [-52, 16], [14, 36], [42, 10], [42, 50], [-30, 48], [10, 48]];
 const holes: [number, number][] = [[-58, -58], [58, -58], [58, 58], [-58, 58]];
 const chipFootprint = diamond(16);
 
-// Enclosure: an inset lid with a thickness, a slot and a button.
-const lid = diamond(H - 6);
-const depth = 18;
-const lidEdge = [
-  line([H - 6, -(H - 6)], [H - 6, H - 6]),
-  line([H - 6, H - 6], [-(H - 6), H - 6]),
-].join(" ");
+// Enclosure: a box printed in layers. The bed is the plate outline; the box
+// is an inset diamond extruded `depth` down. A nozzle travels one continuous
+// spiral (each perimeter, then a step up) and every layer is drawn beneath
+// it as it passes; the last layer is the lid.
+const inset = H - 6;
+const depth = 30;
+const layerStep = 5;
+const layerYs = Array.from({ length: depth / layerStep + 1 }, (_, k) => depth - k * layerStep);
+// A closed loop around the box at `dy` below the lid plane, ending back at
+// its start so the spiral can step straight up to the next layer.
+const perimeter = (dy: number) => {
+  const pts: [number, number][] = [[-inset, -inset], [inset, -inset], [inset, inset], [-inset, inset], [-inset, -inset]];
+  return `M ${pts.map(([x, y]) => { const [sx, sy] = iso(x, y); return `${sx.toFixed(1)} ${(sy + dy).toFixed(1)}`; }).join(" L ")}`;
+};
+const spiral = layerYs.map((y) => perimeter(y)).join(" ").replace(/ M /g, " L ");
+const verticals = `M ${p(inset, -inset)} v ${depth} M ${p(inset, inset)} v ${depth} M ${p(-inset, inset)} v ${depth}`;
+const printMs = { start: 350, layer: 600 };
+const printTotal = layerYs.length * printMs.layer;
 const slot = `M ${poly([[-40, -20], [-8, -20], [-8, -12], [-40, -12]])} Z`;
 const button = iso(30, 24);
 
-// Firmware: a chip with pins and a notch.
+// Firmware: a chip with pins, a notch, and three status LEDs.
 const chip = diamond(28);
 const pins = [-20, -10, 0, 10, 20]
   .flatMap((t) => [
@@ -54,6 +71,11 @@ const bits = [
   `M ${poly([[-14, -6], [-8, -6]])}`,
   `M ${poly([[-2, -6], [14, -6]])}`,
 ].join(" ");
+const leds = [
+  [44, -54],
+  [54, -54],
+  [64, -54],
+].map(([x, y]) => iso(x, y));
 
 // Software: a window with a title bar and lines of text.
 const win = diamond(H - 12);
@@ -68,19 +90,22 @@ const textLines = [
 ].map(([x, y, len]) => `M ${poly([[x, y], [x + len, y]])}`).join(" ");
 const cursor = `M ${poly([[-32, 30], [-26, 30], [-26, 36], [-32, 36]])} Z`;
 
+// Exploded y for each plate, and where it lands when the device compacts:
+// the board inside the box, the chip on the board, the window on the lid.
 const plates = [
-  { id: "pcb", label: "PCB", y: 372 },
-  { id: "enclosure", label: "Enclosure", y: 282 },
-  { id: "firmware", label: "Firmware", y: 192 },
-  { id: "software", label: "Software", y: 102 },
+  { id: "pcb", label: "PCB", y: 372, compact: 262 },
+  { id: "enclosure", label: "Enclosure", y: 282, compact: 250 },
+  { id: "firmware", label: "Firmware", y: 192, compact: 256 },
+  { id: "software", label: "Software", y: 102, compact: 246 },
 ];
+const compactLabelY = 250;
 ---
 
 <svg
   viewBox="0 0 460 470"
   class="stack h-full w-full"
   role="img"
-  aria-label="An exploded drawing of a device: a circuit board, an enclosure, a microcontroller, and a software window, stacked."
+  aria-label="An exploded drawing of a device: a circuit board, an enclosure, a microcontroller, and a software window, stacked, then assembled into one object."
   data-stack
 >
   <g class="ghosts" fill="none" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 5">
@@ -90,48 +115,94 @@ const plates = [
 
   <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
     {/* 01 PCB */}
-    <g transform={`translate(200 ${plates[0].y})`}><g class="plate" data-plate="pcb">
-      <path d={outline} class="face" />
-      <path d={chipFootprint} />
-      <path d={traces} class="detail" />
-      {pads.map(([x, y]) => {
-        const [cx, cy] = iso(x, y);
-        return <ellipse cx={cx} cy={cy} rx="3.2" ry="1.9" fill="var(--bg)" />;
-      })}
-      {holes.map(([x, y]) => {
-        const [cx, cy] = iso(x, y);
-        return <ellipse cx={cx} cy={cy} rx="3.6" ry="2.1" />;
-      })}
-    </g></g>
+    <g transform={`translate(200 ${plates[0].y})`}>
+      <g class="pos" style={`--dy: ${plates[0].compact - plates[0].y}px`}>
+        <g class="plate" data-plate="pcb">
+          <path d={outline} class="face" />
+          <path d={chipFootprint} />
+          {traces.map((d) => (
+            <path d={d} class="detail" />
+          ))}
+          {traces.map((d) => (
+            <path d={d} pathLength="1" class="flow" />
+          ))}
+          {pads.map(([x, y]) => {
+            const [cx, cy] = iso(x, y);
+            return <ellipse cx={cx} cy={cy} rx="3.2" ry="1.9" fill="var(--bg)" />;
+          })}
+          {holes.map(([x, y]) => {
+            const [cx, cy] = iso(x, y);
+            return <ellipse cx={cx} cy={cy} rx="3.6" ry="2.1" />;
+          })}
+        </g>
+      </g>
+    </g>
 
     {/* 02 Enclosure */}
-    <g transform={`translate(200 ${plates[1].y})`}><g class="plate" data-plate="enclosure">
-      <path d={outline} class="face" />
-      <path d={lid} />
-      <path d={lidEdge} transform={`translate(0 ${depth})`} class="detail" />
-      <path d={`M ${p(H - 6, -(H - 6))} v ${depth} M ${p(H - 6, H - 6)} v ${depth} M ${p(-(H - 6), H - 6)} v ${depth}`} class="detail" />
-      <path d={slot} class="detail" />
-      <ellipse cx={button[0]} cy={button[1]} rx="6" ry="3.5" class="detail" />
-    </g></g>
+    <g transform={`translate(200 ${plates[1].y})`}>
+      <g class="pos" style={`--dy: ${plates[1].compact - plates[1].y}px`}>
+        <g class="plate" data-plate="enclosure">
+          <path d={outline} class="face" />
+          {layerYs.map((y, k) => (
+            <path
+              d={perimeter(y)}
+              pathLength="1"
+              class:list={["layer", k < layerYs.length - 1 && "detail"]}
+              style={`animation-delay: ${printMs.start + k * printMs.layer}ms; animation-duration: ${printMs.layer}ms`}
+            />
+          ))}
+          <g class="finish" style={`animation-delay: ${printMs.start + printTotal + 120}ms`}>
+            <path d={verticals} class="detail" />
+            <path d={slot} class="detail" />
+            <ellipse cx={button[0]} cy={button[1]} rx="6" ry="3.5" class="detail" />
+          </g>
+          <g
+            class="nozzle"
+            style={`offset-path: path("${spiral}"); animation-delay: ${printMs.start}ms; animation-duration: ${printTotal}ms`}
+          >
+            {/* A hotend, tip on the path: feed, heatsink fins, heat break, heater block, nozzle. */}
+            <path d="M 0 -30 V -42" class="detail" stroke-width="1" />
+            <path d="M -4.5 -30 H 4.5 M -4.5 -27.5 H 4.5 M -4.5 -25 H 4.5 M -4.5 -22.5 H 4.5 M 0 -30 V -16" class="detail" stroke-width="1" />
+            <path d="M -5 -16 H 5 V -9 H -5 Z" fill="var(--bg)" stroke-width="1" />
+            <path d="M -3.2 -9 H 3.2 V -5 H -3.2 Z" fill="var(--bg)" stroke-width="1" />
+            <path d="M -3.2 -5 L 3.2 -5 L 0.9 -0.5 L -0.9 -0.5 Z" fill="var(--bg)" stroke-width="1" />
+            <circle cx="0" cy="-1" r="1.1" fill="var(--accent)" stroke="none" class="hot" />
+          </g>
+        </g>
+      </g>
+    </g>
 
     {/* 03 Firmware */}
-    <g transform={`translate(200 ${plates[2].y})`}><g class="plate" data-plate="firmware">
-      <path d={outline} class="face" />
-      <path d={chip} fill="var(--bg)" />
-      <path d={pins} class="detail" />
-      <circle cx={notch[0]} cy={notch[1]} r="2" fill="currentColor" />
-      <path d={bits} class="detail" />
-    </g></g>
+    <g transform={`translate(200 ${plates[2].y})`}>
+      <g class="pos" style={`--dy: ${plates[2].compact - plates[2].y}px`}>
+        <g class="plate" data-plate="firmware">
+          <path d={outline} class="face" />
+          <path d={chip} fill="var(--bg)" />
+          <path d={pins} class="detail" />
+          <circle cx={notch[0]} cy={notch[1]} r="2" fill="currentColor" />
+          <path d={bits} class="detail" />
+          {leds.map(([cx, cy], i) => (
+            <ellipse cx={cx} cy={cy} rx="3.4" ry="2" class={`led led-${i}`} stroke="var(--muted)" stroke-width="1" />
+          ))}
+        </g>
+      </g>
+    </g>
 
     {/* 04 Software */}
-    <g transform={`translate(200 ${plates[3].y})`}><g class="plate" data-plate="software">
-      <path d={outline} class="face" />
-      <path d={win} fill="var(--bg)" />
-      <path d={titleBar} class="detail" />
-      {dots.map(([cx, cy]) => <circle cx={cx} cy={cy} r="1.6" fill="currentColor" stroke="none" />)}
-      <path d={textLines} class="detail" />
-      <path d={cursor} fill="var(--accent)" stroke="none" class="cursor" />
-    </g></g>
+    <g transform={`translate(200 ${plates[3].y})`}>
+      <g class="pos" style={`--dy: ${plates[3].compact - plates[3].y}px`}>
+        <g class="plate" data-plate="software">
+          <path d={outline} class="face" />
+          <path d={win} fill="var(--bg)" />
+          <path d={titleBar} class="detail" />
+          {dots.map(([cx, cy]) => (
+            <circle cx={cx} cy={cy} r="1.6" fill="currentColor" stroke="none" />
+          ))}
+          <path d={textLines} class="detail" />
+          <path d={cursor} fill="var(--accent)" stroke="none" class="cursor" />
+        </g>
+      </g>
+    </g>
   </g>
 
   <g class="labels" font-family="var(--font-mono)" font-size="11" fill="var(--muted)">
@@ -140,6 +211,7 @@ const plates = [
         {String(i + 1).padStart(2, "0")} {pl.label}
       </text>
     ))}
+    <text x="338" y={compactLabelY + 4} class="compact-label">05 Device</text>
   </g>
 </svg>
 
@@ -148,6 +220,8 @@ const plates = [
     --ease: cubic-bezier(0.2, 0, 0, 1);
     overflow: visible;
   }
+
+  /* Plates turn on one by one. */
   .plate {
     opacity: 0;
     transform: translateY(-28px);
@@ -172,7 +246,144 @@ const plates = [
   .plate.is-active .detail {
     stroke: currentColor;
   }
-  .plate-label {
+
+  /* PCB: current flows along the traces, lit like a filament. */
+  .flow {
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 0.12 0.2;
+    opacity: 0;
+    filter: drop-shadow(0 0 1.5px var(--accent)) drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 9px var(--accent));
+    transition: opacity 400ms var(--ease);
+  }
+  .plate.is-on .flow {
+    opacity: 1;
+    animation: flow 1.4s linear infinite;
+  }
+  @keyframes flow {
+    from {
+      stroke-dashoffset: 0.32;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Enclosure: the nozzle rides a spiral; each layer is drawn beneath it. */
+  .layer {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  .plate.is-on .layer {
+    animation: lay linear forwards;
+  }
+  @keyframes lay {
+    from {
+      opacity: 1;
+      stroke-dashoffset: 1;
+    }
+    to {
+      opacity: 1;
+      stroke-dashoffset: 0;
+    }
+  }
+  .finish {
+    opacity: 0;
+  }
+  .plate.is-on .finish {
+    animation: finish 500ms var(--ease) forwards;
+  }
+  @keyframes finish {
+    to {
+      opacity: 1;
+    }
+  }
+  .nozzle {
+    offset-rotate: 0deg;
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  .plate.is-on .nozzle {
+    animation: travel linear forwards;
+  }
+  .hot {
+    filter: drop-shadow(0 0 2px var(--accent)) drop-shadow(0 0 5px var(--accent));
+  }
+  @keyframes travel {
+    0% {
+      offset-distance: 0%;
+      opacity: 0;
+    }
+    2% {
+      opacity: 1;
+    }
+    97% {
+      opacity: 1;
+    }
+    100% {
+      offset-distance: 100%;
+      opacity: 0;
+    }
+  }
+
+  /* Firmware: status LEDs on their own rhythms. */
+  .led {
+    fill: var(--accent);
+    fill-opacity: 0.15;
+  }
+  .plate.is-on .led-0 {
+    animation: heartbeat 1.6s ease-in-out infinite;
+  }
+  .plate.is-on .led-1 {
+    animation: blink 1.1s steps(2, end) infinite;
+  }
+  .plate.is-on .led-2 {
+    animation: activity 2.3s steps(1, end) infinite;
+  }
+  @keyframes heartbeat {
+    0%,
+    100% {
+      fill-opacity: 0.15;
+    }
+    10%,
+    30% {
+      fill-opacity: 1;
+    }
+    20% {
+      fill-opacity: 0.3;
+    }
+    45% {
+      fill-opacity: 0.15;
+    }
+  }
+  @keyframes blink {
+    50% {
+      fill-opacity: 1;
+    }
+  }
+  @keyframes activity {
+    0%, 7%, 21%, 30%, 52%, 61%, 66%, 80% {
+      fill-opacity: 0.15;
+    }
+    3%, 12%, 17%, 26%, 40%, 57%, 63%, 71%, 90% {
+      fill-opacity: 1;
+    }
+  }
+
+  /* Software: the cursor ticks. */
+  .cursor {
+    animation: tick 1s steps(2, end) infinite;
+  }
+  @keyframes tick {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* Labels */
+  .plate-label,
+  .compact-label {
     opacity: 0;
     transition: opacity 400ms var(--ease);
   }
@@ -182,21 +393,69 @@ const plates = [
   .plate-label.is-active {
     fill: var(--fg);
   }
-  .cursor {
-    animation: blink 1s steps(2, end) infinite;
+
+  /* 05: the stack collapses into one object. */
+  .pos {
+    transition: transform 900ms var(--ease);
   }
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
+  .ghosts {
+    transition: opacity 500ms var(--ease);
   }
+  .stack.is-compact .pos {
+    transform: translateY(var(--dy));
+  }
+  .stack.is-compact .ghosts,
+  .stack.is-compact .plate-label {
+    opacity: 0;
+  }
+  .stack.is-compact .compact-label {
+    opacity: 1;
+    fill: var(--fg);
+  }
+  /* Board and chip live inside the box: keep them as an x-ray. */
+  .stack.is-compact [data-plate="pcb"],
+  .stack.is-compact [data-plate="firmware"] {
+    opacity: 0.3;
+  }
+  .stack.is-compact [data-plate="pcb"] .face,
+  .stack.is-compact [data-plate="firmware"] .face,
+  .stack.is-compact [data-plate="software"] .face {
+    opacity: 0;
+  }
+  .stack.is-compact .face {
+    stroke: currentColor;
+  }
+  .plate .face {
+    transition:
+      stroke 400ms var(--ease),
+      opacity 500ms var(--ease);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .plate,
-    .plate-label {
+    .plate-label,
+    .compact-label,
+    .pos,
+    .ghosts,
+    .plate .face {
       transition: none;
     }
+    .plate.is-on .flow,
+    .plate.is-on .led,
     .cursor {
       animation: none;
+    }
+    .plate.is-on .layer,
+    .plate.is-on .finish {
+      animation: none;
+      opacity: 1;
+      stroke-dashoffset: 0;
+    }
+    .plate.is-on .nozzle {
+      animation: none;
+    }
+    .led {
+      fill-opacity: 1;
     }
   }
 </style>

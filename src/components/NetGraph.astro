@@ -1,17 +1,16 @@
 ---
-// A small fully-connected network, drawn edge by edge when it enters view.
-// It is the "by day" illustration: precise, unglamorous, and honest about
-// what applied AI work looks like on a whiteboard.
+// The "by day" illustration: a small classifier reading "Good morning!".
+// Three tokens become three numbers, flow into the input layer, pulse
+// through the network layer by layer, and the output resolves to a label.
+// One shared 10 s clock drives every keyframe, so nothing needs JS beyond
+// the in-view trigger that adds `.is-in`.
 const layers = [3, 5, 5, 2];
-const W = 420;
+const W = 560;
 const H = 260;
-const colX = (i: number) => 40 + (i * (W - 80)) / (layers.length - 1);
+const colX = (i: number) => 160 + i * 80;
+const rowY = (n: number, j: number) => H / 2 + (j - (n - 1) / 2) * 44;
 const nodes = layers.flatMap((n, i) =>
-  Array.from({ length: n }, (_, j) => ({
-    x: colX(i),
-    y: H / 2 + (j - (n - 1) / 2) * 44,
-    layer: i,
-  })),
+  Array.from({ length: n }, (_, j) => ({ x: colX(i), y: rowY(n, j), layer: i, row: j })),
 );
 const edges: { a: (typeof nodes)[number]; b: (typeof nodes)[number] }[] = [];
 for (let i = 0; i < layers.length - 1; i++) {
@@ -19,40 +18,88 @@ for (let i = 0; i < layers.length - 1; i++) {
     for (const b of nodes.filter((n) => n.layer === i + 1)) edges.push({ a, b });
   }
 }
+const curve = ({ a, b }: (typeof edges)[number]) =>
+  `M ${a.x} ${a.y} C ${(a.x + b.x) / 2} ${a.y}, ${(a.x + b.x) / 2} ${b.y}, ${b.x} ${b.y}`;
+
+// Input: one token per input node, and the number it becomes.
+const tokens = ["Good", "morning", "!"];
+const values = ["0.82", "0.14", "0.61"];
+const chip = { x: 30, w: 70, h: 22 };
+const inputs = nodes.filter((n) => n.layer === 0);
+const outputs = nodes.filter((n) => n.layer === layers.length - 1);
+const stagger = (i: number) => `animation-delay: ${i * 300}ms`;
 ---
 
-<svg viewBox={`0 0 ${W} ${H}`} class="net w-full" role="img" aria-label="A four-layer neural network diagram." data-reveal>
+<svg
+  viewBox={`0 0 ${W} ${H}`}
+  class="net w-full"
+  role="img"
+  aria-label="A small neural network reads the words 'Good morning!' and classifies the intent as a greeting."
+  data-reveal
+>
+  <!-- Edges: a static base that draws in once, and an accent pulse overlay that loops. -->
   <g fill="none" stroke="var(--rule)" stroke-width="1">
-    {edges.map(({ a, b }, i) => (
-      <path
-        d={`M ${a.x} ${a.y} C ${(a.x + b.x) / 2} ${a.y}, ${(a.x + b.x) / 2} ${b.y}, ${b.x} ${b.y}`}
-        pathLength="1"
-        class="edge"
-        style={`--d: ${a.layer * 350 + (i % 7) * 40}ms`}
-      />
+    {edges.map((e, i) => (
+      <path d={curve(e)} pathLength="1" class="edge" style={`--d: ${e.a.layer * 350 + (i % 7) * 40}ms`} />
     ))}
   </g>
-  <g>
+  <g fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" class="glow">
+    {edges.map((e) => (
+      <path d={curve(e)} pathLength="1" class={`pulse p${e.a.layer}`} />
+    ))}
+  </g>
+
+  <!-- Nodes -->
+  <g stroke-width="1.5">
     {nodes.map((n) => (
       <circle
         cx={n.x}
         cy={n.y}
         r="6"
         fill="var(--bg)"
-        stroke={n.layer === layers.length - 1 ? "var(--accent)" : "currentColor"}
-        stroke-width="1.5"
-        class="node"
-        style={`--d: ${n.layer * 350}ms`}
+        stroke="currentColor"
+        class:list={["node", `n${n.layer}`, n.layer === layers.length - 1 && n.row > 0 && "loser"]}
+        style={`--d: ${n.layer * 350}ms; ${n.layer === 0 ? stagger(n.row) : ""}`}
       />
     ))}
+  </g>
+
+  <!-- Input: token chips that become numbers, then dots that enter the network. -->
+  <g font-family="var(--font-mono)" font-size="11">
+    {inputs.map((n, i) => (
+      <>
+        <g class="tok" style={stagger(i)}>
+          <rect x={chip.x} y={n.y - chip.h / 2} width={chip.w} height={chip.h} rx="4" fill="none" stroke="var(--rule)" />
+          <text x={chip.x + chip.w / 2} y={n.y + 4} text-anchor="middle" fill="currentColor">{tokens[i]}</text>
+        </g>
+        <text x={chip.x + chip.w / 2} y={n.y + 4} text-anchor="middle" fill="var(--accent)" class="emb" style={stagger(i)}>
+          {values[i]}
+        </text>
+        <circle cx={chip.x + chip.w + 6} cy={n.y} r="2.5" fill="var(--accent)" class="dot glow" style={`${stagger(i)}; --dx: ${n.x - 8 - (chip.x + chip.w + 6)}px`} />
+      </>
+    ))}
+  </g>
+
+  <!-- Output label beside the winning node. -->
+  <g class="out" font-family="var(--font-mono)" font-size="11">
+    <text x={outputs[0].x + 16} y={outputs[0].y + 4} fill="var(--muted)">Intent =</text>
+    <text x={outputs[0].x + 16 + 9 * 6.6} y={outputs[0].y + 4} fill="var(--accent)" font-weight="600" class="glow">Greeting</text>
   </g>
 </svg>
 
 <style>
   .net {
     --ease: cubic-bezier(0.2, 0, 0, 1);
+    --clock: 10s;
+    --neon: drop-shadow(0 0 1.5px var(--accent)) drop-shadow(0 0 4px var(--accent)) drop-shadow(0 0 9px var(--accent));
     overflow: visible;
   }
+  /* Anything amber and moving is lit like a filament. */
+  .glow {
+    filter: var(--neon);
+  }
+
+  /* Base network draws in once. */
   .edge {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
@@ -82,6 +129,143 @@ for (let i = 0; i < layers.length - 1; i++) {
       transform: scale(1);
     }
   }
+
+  /* The loop. Everything below shares --clock; percentages are the timeline. */
+  .tok,
+  .emb,
+  .dot,
+  .out {
+    opacity: 0;
+  }
+  .pulse {
+    stroke-dasharray: 0.2 1.8;
+    stroke-dashoffset: 0.2;
+    opacity: 0;
+  }
+  .net.is-in .tok {
+    animation: tok var(--clock) linear infinite;
+  }
+  .net.is-in .emb {
+    animation: emb var(--clock) linear infinite;
+  }
+  .net.is-in .dot {
+    animation: dot var(--clock) var(--ease) infinite;
+  }
+  .net.is-in .pulse.p0 {
+    animation: pulse0 var(--clock) linear infinite;
+  }
+  .net.is-in .pulse.p1 {
+    animation: pulse1 var(--clock) linear infinite;
+  }
+  .net.is-in .pulse.p2 {
+    animation: pulse2 var(--clock) linear infinite;
+  }
+  .net.is-in .node.n0 {
+    animation:
+      pop 500ms var(--ease) forwards,
+      lit0 var(--clock) linear infinite;
+    animation-delay: var(--d), var(--d);
+  }
+  .net.is-in .node.n1 {
+    animation:
+      pop 500ms var(--ease) forwards,
+      lit1 var(--clock) linear infinite;
+    animation-delay: var(--d), 0ms;
+  }
+  .net.is-in .node.n2 {
+    animation:
+      pop 500ms var(--ease) forwards,
+      lit2 var(--clock) linear infinite;
+    animation-delay: var(--d), 0ms;
+  }
+  .net.is-in .node.n3 {
+    animation:
+      pop 500ms var(--ease) forwards,
+      lit3 var(--clock) linear infinite;
+    animation-delay: var(--d), 0ms;
+  }
+  .net.is-in .node.n3.loser {
+    animation:
+      pop 500ms var(--ease) forwards,
+      lose var(--clock) linear infinite;
+    animation-delay: var(--d), 0ms;
+  }
+  .net.is-in .out {
+    animation: out var(--clock) var(--ease) infinite;
+  }
+
+
+  /* Timeline (of --clock):
+       3–14   token chips appear and hold
+      15–27   chips become numbers
+      26–33   numbers fly into the input layer, inputs light
+      35–45   pulse, layer 0 → 1
+      45–55   pulse, layer 1 → 2
+      55–65   pulse, layer 2 → 3
+      66–90   output resolves, label shows
+      92–100  fade, loop */
+  @keyframes tok {
+    0%, 2% { opacity: 0; transform: translateX(-6px); }
+    5%, 14% { opacity: 1; transform: none; }
+    16%, 100% { opacity: 0; transform: none; }
+  }
+  @keyframes emb {
+    0%, 15% { opacity: 0; }
+    17%, 25% { opacity: 1; }
+    28%, 100% { opacity: 0; }
+  }
+  @keyframes dot {
+    0%, 25% { opacity: 0; transform: translateX(0); }
+    26% { opacity: 1; transform: translateX(0); }
+    32% { opacity: 1; transform: translateX(var(--dx)); }
+    33%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+  }
+  @keyframes pulse0 {
+    0%, 35% { stroke-dashoffset: 0.2; opacity: 1; }
+    45% { stroke-dashoffset: -1; opacity: 1; }
+    45.1%, 100% { stroke-dashoffset: -1; opacity: 0; }
+  }
+  @keyframes pulse1 {
+    0%, 45% { stroke-dashoffset: 0.2; opacity: 1; }
+    55% { stroke-dashoffset: -1; opacity: 1; }
+    55.1%, 100% { stroke-dashoffset: -1; opacity: 0; }
+  }
+  @keyframes pulse2 {
+    0%, 55% { stroke-dashoffset: 0.2; opacity: 1; }
+    65% { stroke-dashoffset: -1; opacity: 1; }
+    65.1%, 100% { stroke-dashoffset: -1; opacity: 0; }
+  }
+  @keyframes lit0 {
+    0%, 31% { fill: var(--bg); stroke: currentColor; filter: none; }
+    33%, 90% { fill: var(--accent); stroke: var(--accent); filter: var(--neon); }
+    95%, 100% { fill: var(--bg); stroke: currentColor; filter: none; }
+  }
+  @keyframes lit1 {
+    0%, 43% { fill: var(--bg); stroke: currentColor; filter: none; }
+    45%, 90% { fill: var(--accent); stroke: var(--accent); filter: var(--neon); }
+    95%, 100% { fill: var(--bg); stroke: currentColor; filter: none; }
+  }
+  @keyframes lit2 {
+    0%, 53% { fill: var(--bg); stroke: currentColor; filter: none; }
+    55%, 90% { fill: var(--accent); stroke: var(--accent); filter: var(--neon); }
+    95%, 100% { fill: var(--bg); stroke: currentColor; filter: none; }
+  }
+  @keyframes lit3 {
+    0%, 63% { fill: var(--bg); stroke: currentColor; r: 6; filter: none; }
+    66%, 90% { fill: var(--accent); stroke: var(--accent); r: 8; filter: var(--neon); }
+    95%, 100% { fill: var(--bg); stroke: currentColor; r: 6; filter: none; }
+  }
+  @keyframes lose {
+    0%, 63% { stroke: currentColor; }
+    66%, 90% { stroke: var(--rule); }
+    95%, 100% { stroke: currentColor; }
+  }
+  @keyframes out {
+    0%, 66% { opacity: 0; transform: translateX(-6px); }
+    70%, 90% { opacity: 1; transform: none; }
+    95%, 100% { opacity: 0; transform: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .edge {
       stroke-dashoffset: 0;
@@ -91,8 +275,22 @@ for (let i = 0; i < layers.length - 1; i++) {
       transform: none;
     }
     .net.is-in .edge,
-    .net.is-in .node {
+    .net.is-in .node,
+    .net.is-in .tok,
+    .net.is-in .emb,
+    .net.is-in .dot,
+    .net.is-in .pulse,
+    .net.is-in .out {
       animation: none;
+    }
+    /* Static end state: the sentence in, the answer out. */
+    .tok,
+    .out {
+      opacity: 1;
+    }
+    .node.n3:not(.loser) {
+      fill: var(--accent);
+      stroke: var(--accent);
     }
   }
 </style>
