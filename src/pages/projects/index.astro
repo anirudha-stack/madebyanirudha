@@ -1,0 +1,45 @@
+---
+import { Image } from "astro:assets";
+import { getCollection } from "astro:content";
+import Ledger from "../../components/Ledger.astro";
+import Base from "../../layouts/Base.astro";
+
+const projects = (await getCollection("projects", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+const fmt = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
+---
+
+<Base title="Projects" description="Finished things: the circuit board, the enclosure, the firmware and the software, all documented.">
+  <section class="pt-10 sm:pt-16">
+    <h1 class="text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]">Projects</h1>
+    <p class="mt-4 max-w-[60ch] text-[1.125rem] text-muted">
+      Finished things. Every one states all four layers, because one person building the whole device is the point.
+    </p>
+
+    <ul class="mt-12 grid gap-14 border-t border-rule pt-12">
+      {projects.map((p) => (
+        <li class="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-12">
+          <a href={`/projects/${p.id}`} class="block" aria-label={`${p.data.title}: see the build`}>
+            <Image
+              src={p.data.cover}
+              alt={p.data.coverAlt}
+              widths={[640, 960, 1280]}
+              sizes="(min-width: 1024px) 660px, 100vw"
+              class="aspect-[16/10] w-full object-cover"
+              style={p.data.flagship ? "view-transition-name: flagship-cover" : undefined}
+            />
+          </a>
+          <div>
+            <p class="text-[0.875rem] text-muted"><time datetime={p.data.date.toISOString()}>{fmt.format(p.data.date)}</time></p>
+            <h2 class="mt-2 text-[1.5rem] tracking-[-0.02em] sm:text-[1.75rem]">
+              <a href={`/projects/${p.id}`} class="link">{p.data.title}</a>
+            </h2>
+            <p class="mt-2 max-w-[48ch] text-muted">{p.data.summary}</p>
+            <Ledger layers={p.data.layers} class="mt-6 sm:grid-cols-2" />
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Base>

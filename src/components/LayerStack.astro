@@ -1,0 +1,202 @@
+---
+// The device, exploded: four isometric plates, one per layer. Plates are
+// drawn from bottom (PCB) to top (software) and the page turns them on one
+// at a time as the visitor scrolls through the matching step. Ghost outlines
+// stay visible so the empty stack still reads as a stack.
+//
+// Plate-local coordinates are a 140-unit square centred at the origin;
+// `iso` projects them to screen space.
+const iso = (x: number, y: number): [number, number] => [(x - y) * 0.866, (x + y) * 0.5];
+const p = (x: number, y: number) => iso(x, y).map((n) => n.toFixed(1)).join(" ");
+const poly = (pts: [number, number][]) => pts.map(([x, y]) => p(x, y)).join(" L ");
+const line = (a: [number, number], b: [number, number]) => `M ${p(...a)} L ${p(...b)}`;
+const diamond = (h: number) => `M ${poly([[-h, -h], [h, -h], [h, h], [-h, h]])} Z`;
+
+const H = 70; // half-size of a plate
+const outline = diamond(H);
+
+// PCB: traces, pads, mounting holes.
+const traces = [
+  `M ${poly([[-52, -44], [4, -44], [24, -24]])}`,
+  `M ${poly([[-52, -14], [36, -14]])}`,
+  `M ${poly([[-52, 16], [-6, 16], [14, 36]])}`,
+  `M ${poly([[42, 10], [42, 50]])}`,
+  `M ${poly([[-30, 48], [10, 48]])}`,
+].join(" ");
+const pads: [number, number][] = [[-52, -44], [24, -24], [-52, -14], [36, -14], [-52, 16], [14, 36], [42, 10], [42, 50], [-30, 48], [10, 48]];
+const holes: [number, number][] = [[-58, -58], [58, -58], [58, 58], [-58, 58]];
+const chipFootprint = diamond(16);
+
+// Enclosure: an inset lid with a thickness, a slot and a button.
+const lid = diamond(H - 6);
+const depth = 18;
+const lidEdge = [
+  line([H - 6, -(H - 6)], [H - 6, H - 6]),
+  line([H - 6, H - 6], [-(H - 6), H - 6]),
+].join(" ");
+const slot = `M ${poly([[-40, -20], [-8, -20], [-8, -12], [-40, -12]])} Z`;
+const button = iso(30, 24);
+
+// Firmware: a chip with pins and a notch.
+const chip = diamond(28);
+const pins = [-20, -10, 0, 10, 20]
+  .flatMap((t) => [
+    line([-28, t], [-40, t]),
+    line([28, t], [40, t]),
+    line([t, -28], [t, -40]),
+    line([t, 28], [t, 40]),
+  ])
+  .join(" ");
+const notch = iso(-22, -22);
+const bits = [
+  `M ${poly([[-14, 6], [-2, 6]])}`,
+  `M ${poly([[4, 6], [14, 6]])}`,
+  `M ${poly([[-14, -6], [-8, -6]])}`,
+  `M ${poly([[-2, -6], [14, -6]])}`,
+].join(" ");
+
+// Software: a window with a title bar and lines of text.
+const win = diamond(H - 12);
+const titleBar = line([-(H - 12), -34], [H - 12, -34]);
+const dots = [[-48, -46], [-40, -46], [-32, -46]].map(([x, y]) => iso(x, y));
+const textLines = [
+  [-48, -18, 40],
+  [-48, -6, 22],
+  [-40, 6, 44],
+  [-40, 18, 30],
+  [-48, 30, 12],
+].map(([x, y, len]) => `M ${poly([[x, y], [x + len, y]])}`).join(" ");
+const cursor = `M ${poly([[-32, 30], [-26, 30], [-26, 36], [-32, 36]])} Z`;
+
+const plates = [
+  { id: "pcb", label: "PCB", y: 372 },
+  { id: "enclosure", label: "Enclosure", y: 282 },
+  { id: "firmware", label: "Firmware", y: 192 },
+  { id: "software", label: "Software", y: 102 },
+];
+---
+
+<svg
+  viewBox="0 0 460 470"
+  class="stack h-full w-full"
+  role="img"
+  aria-label="An exploded drawing of a device: a circuit board, an enclosure, a microcontroller, and a software window, stacked."
+  data-stack
+>
+  <g class="ghosts" fill="none" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 5">
+    {plates.map((pl) => <path d={outline} transform={`translate(200 ${pl.y})`} />)}
+    <path d="M 200 40 V 440" stroke-dasharray="1 5" />
+  </g>
+
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+    {/* 01 PCB */}
+    <g transform={`translate(200 ${plates[0].y})`}><g class="plate" data-plate="pcb">
+      <path d={outline} class="face" />
+      <path d={chipFootprint} />
+      <path d={traces} class="detail" />
+      {pads.map(([x, y]) => {
+        const [cx, cy] = iso(x, y);
+        return <ellipse cx={cx} cy={cy} rx="3.2" ry="1.9" fill="var(--bg)" />;
+      })}
+      {holes.map(([x, y]) => {
+        const [cx, cy] = iso(x, y);
+        return <ellipse cx={cx} cy={cy} rx="3.6" ry="2.1" />;
+      })}
+    </g></g>
+
+    {/* 02 Enclosure */}
+    <g transform={`translate(200 ${plates[1].y})`}><g class="plate" data-plate="enclosure">
+      <path d={outline} class="face" />
+      <path d={lid} />
+      <path d={lidEdge} transform={`translate(0 ${depth})`} class="detail" />
+      <path d={`M ${p(H - 6, -(H - 6))} v ${depth} M ${p(H - 6, H - 6)} v ${depth} M ${p(-(H - 6), H - 6)} v ${depth}`} class="detail" />
+      <path d={slot} class="detail" />
+      <ellipse cx={button[0]} cy={button[1]} rx="6" ry="3.5" class="detail" />
+    </g></g>
+
+    {/* 03 Firmware */}
+    <g transform={`translate(200 ${plates[2].y})`}><g class="plate" data-plate="firmware">
+      <path d={outline} class="face" />
+      <path d={chip} fill="var(--bg)" />
+      <path d={pins} class="detail" />
+      <circle cx={notch[0]} cy={notch[1]} r="2" fill="currentColor" />
+      <path d={bits} class="detail" />
+    </g></g>
+
+    {/* 04 Software */}
+    <g transform={`translate(200 ${plates[3].y})`}><g class="plate" data-plate="software">
+      <path d={outline} class="face" />
+      <path d={win} fill="var(--bg)" />
+      <path d={titleBar} class="detail" />
+      {dots.map(([cx, cy]) => <circle cx={cx} cy={cy} r="1.6" fill="currentColor" stroke="none" />)}
+      <path d={textLines} class="detail" />
+      <path d={cursor} fill="var(--accent)" stroke="none" class="cursor" />
+    </g></g>
+  </g>
+
+  <g class="labels" font-family="var(--font-mono)" font-size="11" fill="var(--muted)">
+    {plates.map((pl, i) => (
+      <text x="338" y={pl.y + 4} class="plate-label" data-plate-label={pl.id}>
+        {String(i + 1).padStart(2, "0")} {pl.label}
+      </text>
+    ))}
+  </g>
+</svg>
+
+<style>
+  .stack {
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    overflow: visible;
+  }
+  .plate {
+    opacity: 0;
+    transform: translateY(-28px);
+    transition:
+      opacity 600ms var(--ease),
+      transform 700ms var(--ease);
+  }
+  .plate.is-on {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .plate .face {
+    transition: stroke 400ms var(--ease);
+  }
+  .plate .detail {
+    stroke: var(--muted);
+    transition: stroke 400ms var(--ease);
+  }
+  .plate.is-active .face {
+    stroke: var(--accent);
+  }
+  .plate.is-active .detail {
+    stroke: currentColor;
+  }
+  .plate-label {
+    opacity: 0;
+    transition: opacity 400ms var(--ease);
+  }
+  .plate-label.is-on {
+    opacity: 1;
+  }
+  .plate-label.is-active {
+    fill: var(--fg);
+  }
+  .cursor {
+    animation: blink 1s steps(2, end) infinite;
+  }
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .plate,
+    .plate-label {
+      transition: none;
+    }
+    .cursor {
+      animation: none;
+    }
+  }
+</style>

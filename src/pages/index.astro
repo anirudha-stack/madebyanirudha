@@ -1,7 +1,11 @@
 ---
 import { Image } from "astro:assets";
 import { getCollection } from "astro:content";
+import Icon from "../components/Icon.astro";
+import LayerStack from "../components/LayerStack.astro";
 import Ledger from "../components/Ledger.astro";
+import Logo from "../components/Logo.astro";
+import NetGraph from "../components/NetGraph.astro";
 import Base from "../layouts/Base.astro";
 import { site } from "../site";
 
@@ -9,113 +13,704 @@ const projects = (await getCollection("projects", ({ data }) => !data.draft)).so
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
 const flagship = projects.find((p) => p.data.flagship) ?? projects[0];
-const supporting = projects.filter((p) => p !== flagship).slice(0, 2);
+const live = (entries: { data: { draft: boolean } }[]) => entries.filter((e) => !e.data.draft).length;
+const logCount = live(await getCollection("logs"));
+const guideCount = live(await getCollection("guides"));
 
-const byDate = <T extends { data: { date: Date; draft: boolean } }>(entries: T[]) =>
-  entries.filter((e) => !e.data.draft).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-const logs = byDate(await getCollection("logs")).slice(0, 5);
-const guides = byDate(await getCollection("guides")).slice(0, 5);
+const chapters = [
+  { id: "day", n: "01", label: "By day" },
+  { id: "night", n: "02", label: "By night" },
+  { id: "proof", n: "03", label: "The proof" },
+  { id: "next", n: "04", label: "Where next" },
+];
 
-const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+// The four steps of the "by night" chapter, in build order. Each turns on
+// the matching plate in the LayerStack as it reaches the middle of the screen.
+const steps = [
+  {
+    id: "pcb",
+    name: "PCB",
+    title: "It starts as a board.",
+    body: "Schematic, layout, the order to the fab, and the wait. Then paste, reflow, and a first power-on with one finger on the switch.",
+  },
+  {
+    id: "enclosure",
+    name: "Enclosure",
+    title: "Then it gets a body.",
+    body: "Modelled around the board, printed, filed, printed again. Tolerances are learned the hard way and written down so they are learned once.",
+  },
+  {
+    id: "firmware",
+    name: "Firmware",
+    title: "Then it wakes up.",
+    body: "Drivers, control loops, the tightest interrupt I can get away with. This is where most of the swearing happens.",
+  },
+  {
+    id: "software",
+    name: "Software",
+    title: "Then it talks.",
+    body: "Tools to configure it, log it, and see what it is thinking. The part the day job is good for.",
+  },
+];
+
+const elsewhere = [
+  { icon: "instagram", label: "Instagram", hint: "@madebyanirudha", href: "https://www.instagram.com/madebyanirudha/" },
+  { icon: "youtube", label: "YouTube", hint: "@madebyanirudha", href: "https://www.youtube.com/@madebyanirudha" },
+  { icon: "instructables", label: "Instructables", hint: "madebyanirudha", href: "https://www.instructables.com/member/madebyanirudha" },
+  { icon: "mail", label: "Email", hint: site.email, href: `mailto:${site.email}` },
+] as const;
 ---
 
 <Base image={flagship ? new URL(flagship.data.cover.src, site.domain).href : undefined}>
-  <section class="pt-12 sm:pt-16">
-    <h1 class="text-[1.5rem] font-[500] leading-[1.2] tracking-[-0.02em] sm:text-[2rem]">{site.identity}</h1>
-    <p class="mt-4 max-w-[58ch] text-[1.0625rem] leading-[1.55] text-muted sm:mt-5 sm:text-[1.125rem]">
-      I'm Anirudha, a senior applied AI engineer by profession. At home I build hardware:
-      the circuit board, the enclosure, the firmware and the software, the whole device.
-      This is where the builds live: what I made, how it went, and what broke along the way.
-    </p>
+  <!-- Chapter rail: desktop only, appears once the hero has scrolled away. -->
+  <nav class="rail" aria-label="Chapters" data-rail>
+    <ol>
+      {chapters.map((c) => (
+        <li>
+          <a href={`#${c.id}`} data-rail-link={c.id}>
+            <span class="num">{c.n}</span>
+            <span class="rail-label">{c.label}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" data-hero aria-labelledby="hero-title">
+    <div class="hero-grid" aria-hidden="true"></div>
+    <div class="hero-body">
+      <div data-reveal><Logo size={72} /></div>
+      <p class="mt-8 text-[0.9375rem] text-muted" data-reveal style="--d: 80ms">
+        <span class="num">madebyanirudha.in</span>
+      </p>
+      <h1
+        id="hero-title"
+        class="mt-3 max-w-[14ch] text-[2.5rem] leading-[1.02] tracking-[-0.035em] sm:text-[4rem] lg:text-[5rem]"
+        data-reveal
+        style="--d: 140ms"
+      >
+        Software that thinks. <span class="text-muted">Hardware that moves.</span>
+      </h1>
+      <p class="mt-7 max-w-[52ch] text-[1.125rem] leading-[1.5] text-muted sm:text-[1.25rem]" data-reveal style="--d: 220ms">
+        Hi, I'm Anirudha, Applied AI Engineer. By day I teach software to think. At home I give it a body:
+        the circuit board, the enclosure, the firmware and the software, the whole device from one pair of hands.
+      </p>
+      <a href="#day" class="cue mt-14 inline-flex items-center gap-3 text-[0.9375rem]" data-reveal style="--d: 320ms">
+        <span class="cue-line" aria-hidden="true"><span class="cue-dot"></span></span>
+        <span>Scroll to meet me</span>
+      </a>
+    </div>
   </section>
 
+  <!-- 01 By day -->
+  <section id="day" class="chapter" data-chapter="day" aria-labelledby="day-title">
+    <div class="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20">
+      <div>
+        <p class="eyebrow" data-reveal><span class="num">01</span> By day</p>
+        <h2 id="day-title" class="mt-4 text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]" data-reveal style="--d: 80ms">
+          Software that thinks.
+        </h2>
+        <p class="mt-5 max-w-[48ch] text-[1.0625rem] leading-[1.55] text-muted sm:text-[1.125rem]" data-reveal style="--d: 160ms">
+          I'm an Applied AI Engineer: models, pipelines, and the plain software that puts them in front of
+          people. Teaching machines to reason is a good day's work, and it is where I learned to ship.
+        </p>
+      </div>
+      <div class="lg:pl-6">
+        <NetGraph />
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 By night -->
+  <section id="night" class="chapter" data-chapter="night" aria-labelledby="night-title">
+    <div class="max-w-[60ch]">
+      <p class="eyebrow" data-reveal><span class="num">02</span> By night</p>
+      <h2 id="night-title" class="mt-4 text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]" data-reveal style="--d: 80ms">
+        Hardware that moves.
+      </h2>
+      <p class="mt-5 text-[1.0625rem] leading-[1.55] text-muted sm:text-[1.125rem]" data-reveal style="--d: 160ms">
+        At home the job is the whole device. Four layers, and nobody to hand any of them to.
+      </p>
+    </div>
+
+    <div class="stack-layout mt-12 sm:mt-16">
+      <div class="stack-sticky">
+        <LayerStack />
+      </div>
+      <ol class="steps">
+        {steps.map((s, i) => (
+          <li class="step" data-step={s.id} id={`step-${s.id}`}>
+            <p class="eyebrow"><span class="num">{String(i + 1).padStart(2, "0")}</span> {s.name}</p>
+            <h3 class="mt-3 text-[1.5rem] leading-[1.15] tracking-[-0.02em] sm:text-[1.875rem]">{s.title}</h3>
+            <p class="mt-3 max-w-[40ch] text-[1.0625rem] leading-[1.55] text-muted">{s.body}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- 03 The proof -->
   {flagship && (
-    <section class="mt-10 sm:mt-12" aria-labelledby="flagship-title">
-      <a href={`/projects/${flagship.id}`} class="-mx-5 block sm:mx-0" aria-label={`${flagship.data.title}: see the build`}>
+    <section id="proof" class="chapter" data-chapter="proof" aria-labelledby="proof-title">
+      <div class="max-w-[60ch]">
+        <p class="eyebrow" data-reveal><span class="num">03</span> The proof</p>
+        <h2 id="proof-title" class="mt-4 text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]" data-reveal style="--d: 80ms">
+          Every claim points at a thing.
+        </h2>
+      </div>
+      <a href={`/projects/${flagship.id}`} class="photo bleed mt-10 block sm:mt-12" aria-label={`${flagship.data.title}: see the build`}>
         <Image
           src={flagship.data.cover}
           alt={flagship.data.coverAlt}
           widths={[640, 960, 1280, 1600, 2240]}
-          sizes="(min-width: 1184px) 1120px, 100vw"
-          loading="eager"
-          fetchpriority="high"
-          class="aspect-[16/10] w-full object-cover"
+          sizes="100vw"
+          class="photo-img aspect-[4/3] w-full object-cover sm:aspect-[16/9] lg:aspect-[21/9]"
           style="view-transition-name: flagship-cover"
         />
+        <span class="photo-tag">
+          <span class="num">{flagship.data.date.getFullYear()}</span>
+          <span>{flagship.data.title}</span>
+        </span>
       </a>
-      <div class="mt-5 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2">
-        <h2 id="flagship-title" class="text-[1.5rem] tracking-[-0.02em] sm:text-[1.75rem]">
-          <a href={`/projects/${flagship.id}`}>{flagship.data.title}</a>
-        </h2>
-        <a href={`/projects/${flagship.id}`} class="text-[0.9375rem]">
-          <span class="link">See the build</span> <span aria-hidden="true" class="text-accent">→</span>
-        </a>
+      <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-16">
+        <div>
+          <h3 class="text-[1.5rem] tracking-[-0.02em] sm:text-[1.75rem]" data-reveal>
+            <a href={`/projects/${flagship.id}`}>{flagship.data.title}</a>
+          </h3>
+          <p class="mt-2 max-w-[56ch] text-[1.0625rem] text-muted" data-reveal style="--d: 80ms">{flagship.data.summary}</p>
+          <a href={`/projects/${flagship.id}`} class="mt-5 inline-flex items-center gap-2 text-[0.9375rem]" data-reveal style="--d: 160ms">
+            <span class="link">See the build</span>
+            <Icon name="arrow-right" size={16} class="text-accent" />
+          </a>
+        </div>
+        <div data-reveal style="--d: 120ms">
+          <Ledger layers={flagship.data.layers} />
+        </div>
       </div>
-      <p class="mt-2 max-w-[60ch] text-muted">{flagship.data.summary}</p>
-      {flagship.data.synthetic && (
-        <p class="mt-3 text-[0.8125rem] text-muted">
-          <span class="font-[500] text-fg">Stand-in</span> — layer facts and photograph are placeholders until the build is documented.
-        </p>
-      )}
-      <Ledger layers={flagship.data.layers} class="mt-6" />
     </section>
   )}
 
-  {supporting.length > 0 && (
-    <section class="mt-20" aria-labelledby="more-title">
-      <h2 id="more-title" class="text-[0.9375rem] font-normal text-muted">Also built</h2>
-      <ul class="mt-4 grid gap-10 border-t border-rule pt-8 sm:grid-cols-2">
-        {supporting.map((p) => (
-          <li>
-            <a href={`/projects/${p.id}`} class="block">
-              <Image src={p.data.cover} alt={p.data.coverAlt} widths={[480, 720, 1080]} sizes="(min-width: 640px) 540px, 100vw" class="aspect-[16/10] w-full object-cover" />
-              <h3 class="mt-4 text-[1.125rem]"><span class="link">{p.data.title}</span></h3>
-              <p class="mt-1 text-[0.9375rem] text-muted">{p.data.summary}</p>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )}
-
-  {(logs.length > 0 || guides.length > 0) && (
-    <div class="mt-20 grid gap-16 sm:grid-cols-2 sm:gap-12">
-      {logs.length > 0 && (
-        <section aria-labelledby="logs-title">
-          <div class="flex items-baseline justify-between">
-            <h2 id="logs-title" class="text-[0.9375rem] font-normal text-muted">Build logs</h2>
-            <a href="/logs" class="link text-[0.875rem]">All logs</a>
-          </div>
-          <ul class="mt-4 border-t border-rule">
-            {logs.map((e) => (
-              <li class="border-b border-rule py-4">
-                <a href={`/logs/${e.id}`} class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
-                  <span class="link">{e.data.title}</span>
-                  <time datetime={e.data.date.toISOString()} class="shrink-0 text-muted">{fmt.format(e.data.date)}</time>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {guides.length > 0 && (
-        <section aria-labelledby="guides-title">
-          <div class="flex items-baseline justify-between">
-            <h2 id="guides-title" class="text-[0.9375rem] font-normal text-muted">How-to guides</h2>
-            <a href="/guides" class="link text-[0.875rem]">All guides</a>
-          </div>
-          <ul class="mt-4 border-t border-rule">
-            {guides.map((e) => (
-              <li class="border-b border-rule py-4">
-                <a href={`/guides/${e.id}`} class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
-                  <span class="link">{e.data.title}</span>
-                  <time datetime={e.data.date.toISOString()} class="shrink-0 text-muted">{fmt.format(e.data.date)}</time>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+  <!-- 04 Where next -->
+  <section id="next" class="chapter chapter-last" data-chapter="next" aria-labelledby="next-title">
+    <div class="max-w-[60ch]">
+      <p class="eyebrow" data-reveal><span class="num">04</span> Where next</p>
+      <h2 id="next-title" class="mt-4 text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]" data-reveal style="--d: 80ms">
+        Pick a door.
+      </h2>
     </div>
-  )}
+
+    <ul class="doors mt-10 grid gap-4 sm:mt-12 md:grid-cols-3">
+      <li data-reveal>
+        <a href="/projects" class="door">
+          <Icon name="cube" size={28} class="door-icon" />
+          <span class="door-title">Projects</span>
+          <span class="door-body">
+            Finished things, all four layers on the table.{" "}
+            {flagship && <>{flagship.data.title} is one of them.</>}
+          </span>
+          {flagship && (
+            <Image
+              src={flagship.data.cover}
+              alt=""
+              widths={[320, 640]}
+              sizes="(min-width: 768px) 340px, 100vw"
+              class="door-thumb aspect-[16/10] w-full object-cover"
+            />
+          )}
+          <span class="door-cta"><span class="link">Check my projects</span> <Icon name="arrow-right" size={16} class="text-accent" /></span>
+        </a>
+      </li>
+      <li data-reveal style="--d: 100ms">
+        <div class="door">
+          <Icon name="notebook" size={28} class="door-icon" />
+          <span class="door-title">Build logs</span>
+          <span class="door-body">The day-in-my-life blog: what I made, how it went, and what broke along the way.</span>
+          <span class="door-meta">
+            {logCount + guideCount > 0 ? (
+              <>
+                <span class="num">{logCount}</span> {logCount === 1 ? "log" : "logs"} · <span class="num">{guideCount}</span>{" "}
+                {guideCount === 1 ? "guide" : "guides"}
+              </>
+            ) : (
+              "First entries are being written."
+            )}
+          </span>
+          <a href="/logs" class="door-cta"><span class="link">Read the logs</span> <Icon name="arrow-right" size={16} class="text-accent" /></a>
+          <a href="/guides" class="door-cta door-cta-sub"><span class="link">Or the how-to guides</span> <Icon name="arrow-right" size={14} class="text-accent" /></a>
+        </div>
+      </li>
+      <li data-reveal style="--d: 200ms">
+        <div class="door">
+          <Icon name="compass" size={28} class="door-icon" />
+          <span class="door-title">Elsewhere</span>
+          <span class="door-body">The same builds, in other rooms.</span>
+          <ul class="elsewhere">
+            {elsewhere.map((e) => (
+              <li>
+                <a href={e.href} rel={e.href.startsWith("http") ? "me noopener" : undefined} class="elsewhere-link">
+                  <Icon name={e.icon} size={22} class="elsewhere-icon" />
+                  <span class="elsewhere-label">{e.label}</span>
+                  <span class="elsewhere-hint">{e.hint}</span>
+                  <Icon name="arrow-up-right" size={14} class="elsewhere-arrow" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </li>
+    </ul>
+  </section>
 </Base>
+
+<style>
+  :root {
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  /* Reveal-on-scroll. `--d` staggers siblings. */
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 700ms var(--ease),
+      transform 800ms var(--ease);
+    transition-delay: var(--d, 0ms);
+  }
+  [data-reveal].is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  .eyebrow {
+    font-size: 0.9375rem;
+    color: var(--muted);
+  }
+  .eyebrow .num {
+    color: var(--accent);
+    margin-right: 0.35em;
+  }
+
+  /* Full-bleed helper: escape the measure without breaking the column. */
+  .bleed {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: calc(100svh - 4rem);
+    padding-block: 3rem 4rem;
+  }
+  .hero-grid {
+    position: absolute;
+    top: -4rem;
+    bottom: 0;
+    left: calc(50% - 50vw);
+    width: 100vw;
+    z-index: -1;
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 2rem 2rem;
+    background-position: center top;
+    mask-image: radial-gradient(ellipse 70% 80% at 50% 40%, #000 0%, transparent 100%);
+    opacity: 0.7;
+  }
+  .hero-body {
+    width: 100%;
+  }
+
+  .cue {
+    color: var(--muted);
+  }
+  .cue-line {
+    position: relative;
+    display: block;
+    width: 1px;
+    height: 3rem;
+    background: var(--rule);
+    overflow: hidden;
+  }
+  .cue-dot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 1rem;
+    background: var(--accent);
+    animation: cue 1.8s var(--ease) infinite;
+  }
+  @keyframes cue {
+    from {
+      transform: translateY(-1rem);
+    }
+    to {
+      transform: translateY(3rem);
+    }
+  }
+  .cue:hover {
+    color: var(--fg);
+  }
+
+  /* Chapters */
+  .chapter {
+    padding-block: 6rem;
+    scroll-margin-top: 2rem;
+  }
+  @media (min-width: 640px) {
+    .chapter {
+      padding-block: 8rem;
+    }
+  }
+  .chapter-last {
+    padding-bottom: 2rem;
+  }
+
+  /* Rail */
+  .rail {
+    display: none;
+  }
+  @media (min-width: 1280px) {
+    .rail {
+      display: block;
+      position: fixed;
+      left: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 400ms var(--ease);
+      pointer-events: none;
+    }
+    .rail.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .rail ol {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+    .rail a {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      transition: color 200ms var(--ease);
+    }
+    .rail a .num {
+      display: inline-block;
+      width: 1.5rem;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 0.15rem;
+      transition: border-color 200ms var(--ease);
+    }
+    .rail a.is-active {
+      color: var(--fg);
+    }
+    .rail a.is-active .num {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .rail-label {
+      opacity: 0;
+      transform: translateX(-4px);
+      transition:
+        opacity 200ms var(--ease),
+        transform 200ms var(--ease);
+    }
+    .rail:hover .rail-label,
+    .rail a.is-active .rail-label {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Sticky stack + steps */
+  .stack-layout {
+    display: grid;
+    gap: 2rem;
+  }
+  .stack-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    height: 42svh;
+    padding-block: 1rem;
+    background: linear-gradient(var(--bg) 85%, transparent);
+  }
+  .steps {
+    display: flex;
+    flex-direction: column;
+  }
+  .step {
+    min-height: 60svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: 2rem;
+    border-top: 1px solid var(--rule);
+    transition: opacity 400ms var(--ease);
+  }
+  @media (min-width: 1024px) {
+    .stack-layout {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 4rem;
+      align-items: start;
+    }
+    .stack-sticky {
+      top: 12vh;
+      height: 76vh;
+      padding: 0;
+      background: none;
+    }
+    .step {
+      min-height: 72vh;
+      opacity: 0.35;
+    }
+    .step.is-active {
+      opacity: 1;
+    }
+  }
+
+  /* Proof photograph */
+  .photo {
+    position: relative;
+    overflow: hidden;
+  }
+  .photo-tag {
+    position: absolute;
+    left: 1.25rem;
+    bottom: 1.25rem;
+    display: inline-flex;
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.875rem;
+    color: #ececee;
+    background: rgb(15 15 16 / 0.72);
+    backdrop-filter: blur(6px);
+  }
+  @media (min-width: 640px) {
+    .photo-tag {
+      left: 2rem;
+      bottom: 2rem;
+    }
+  }
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .photo-img {
+        animation: photo-in linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 55%;
+      }
+      @keyframes photo-in {
+        from {
+          transform: scale(1.14);
+          filter: saturate(0.6);
+        }
+        to {
+          transform: scale(1);
+          filter: saturate(1);
+        }
+      }
+    }
+  }
+
+  /* Doors */
+  .door {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.5rem;
+    border: 1px solid var(--rule);
+    transition:
+      border-color 200ms var(--ease),
+      transform 300ms var(--ease);
+  }
+  a.door:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .door-icon {
+    color: var(--accent);
+  }
+  .door-title {
+    margin-top: 1.25rem;
+    font-size: 1.375rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .door-body {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+  .door-thumb {
+    margin-top: 1.25rem;
+  }
+  .door-meta {
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .door-cta {
+    margin-top: auto;
+    padding-top: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+  }
+  .door-cta-sub {
+    margin-top: 0;
+    padding-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  a.door:hover .link,
+  a.door-cta:hover .link {
+    text-decoration-color: var(--accent);
+    text-underline-offset: 0.3em;
+  }
+  .elsewhere {
+    margin-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+  }
+  .elsewhere-link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "icon label arrow"
+      "icon hint arrow";
+    column-gap: 0.85rem;
+    align-items: center;
+    padding-block: 0.7rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .elsewhere-icon {
+    grid-area: icon;
+  }
+  .elsewhere-label {
+    grid-area: label;
+    font-size: 0.9375rem;
+  }
+  .elsewhere-hint {
+    grid-area: hint;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+  .elsewhere-arrow {
+    grid-area: arrow;
+    color: var(--muted);
+    transition:
+      color 160ms var(--ease),
+      transform 200ms var(--ease);
+  }
+  .elsewhere-link:hover .elsewhere-icon {
+    color: var(--accent);
+  }
+  .elsewhere-link:hover .elsewhere-arrow {
+    color: var(--accent);
+    transform: translate(2px, -2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .cue-dot {
+      animation: none;
+    }
+    .step {
+      opacity: 1;
+    }
+    a.door:hover {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $$ = <T extends Element = HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
+  const canObserve = "IntersectionObserver" in window;
+
+  // Reveal once.
+  const reveals = $$("[data-reveal]");
+  if (reduce || !canObserve) {
+    for (const el of reveals) el.classList.add("is-in");
+  } else {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          e.target.classList.add("is-in");
+          io.unobserve(e.target);
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -8% 0px" },
+    );
+    for (const el of reveals) io.observe(el);
+  }
+
+  // The device assembles as the steps cross the middle of the viewport.
+  const steps = $$("[data-step]");
+  const plates = $$("[data-plate]");
+  const labels = $$("[data-plate-label]");
+  const setStep = (n: number) => {
+    plates.forEach((p, i) => {
+      p.classList.toggle("is-on", i < n);
+      p.classList.toggle("is-active", i === n - 1);
+    });
+    labels.forEach((l, i) => {
+      l.classList.toggle("is-on", i < n);
+      l.classList.toggle("is-active", i === n - 1);
+    });
+    steps.forEach((s, i) => s.classList.toggle("is-active", i === n - 1));
+  };
+  if (reduce || !canObserve) {
+    setStep(steps.length);
+  } else {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setStep(steps.indexOf(e.target as HTMLElement) + 1);
+      },
+      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+    );
+    for (const s of steps) io.observe(s);
+  }
+
+  // Rail: shown after the hero, tracks the chapter in the middle of the screen.
+  const rail = document.querySelector<HTMLElement>("[data-rail]");
+  const hero = document.querySelector<HTMLElement>("[data-hero]");
+  if (rail && hero && canObserve) {
+    new IntersectionObserver(
+      ([e]) => rail.classList.toggle("is-visible", !e.isIntersecting && e.boundingClientRect.bottom < 0),
+      { threshold: 0 },
+    ).observe(hero);
+
+    const links = $$<HTMLAnchorElement>("[data-rail-link]");
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const id = (e.target as HTMLElement).dataset.chapter;
+          for (const l of links) l.classList.toggle("is-active", l.dataset.railLink === id);
+        }
+      },
+      { rootMargin: "-50% 0px -50% 0px", threshold: 0 },
+    );
+    for (const c of $$("[data-chapter]")) io.observe(c);
+  }
+</script>

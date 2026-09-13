@@ -199,7 +199,7 @@ Two neutrals and a rule colour form the page; a single warm amber is held back f
 **Character:** One grotesk at three weights does everything; the mono is a measuring instrument, not a voice. Display sizes are tracked tight (-0.03em) and set at weight 600 so the identity line reads as a statement; every other heading drops to 500 and -0.02em to -0.03em. Body is 16px at 1.5 line-height with `text-wrap: pretty`; headings use `text-wrap: balance`.
 
 ### Hierarchy
-- **Display** (500, 24px phone / 32px desktop, 1.2, -0.02em): the home line only, "Software for money. Hardware for heart." One line; modest by intent, never a job title at billboard size.
+- **Display** (500, 24px phone / 32px desktop, 1.2, -0.02em): the home line only, "Software that thinks. Hardware that moves." One line; modest by intent, never a job title at billboard size.
 - **Headline** (500, 32px phone / 44px desktop, 1.08, -0.03em): page titles on project, log, guide, and index pages.
 - **Title** (500, 24px phone / 28px desktop, -0.02em): the flagship project name under its photograph. Also `.prose` h2 at 24px.
 - **Subtitle** (500, 18px): supporting-project titles on the home page and `.prose` h3.

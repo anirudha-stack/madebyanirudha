@@ -1,0 +1,98 @@
+---
+// A small fully-connected network, drawn edge by edge when it enters view.
+// It is the "by day" illustration: precise, unglamorous, and honest about
+// what applied AI work looks like on a whiteboard.
+const layers = [3, 5, 5, 2];
+const W = 420;
+const H = 260;
+const colX = (i: number) => 40 + (i * (W - 80)) / (layers.length - 1);
+const nodes = layers.flatMap((n, i) =>
+  Array.from({ length: n }, (_, j) => ({
+    x: colX(i),
+    y: H / 2 + (j - (n - 1) / 2) * 44,
+    layer: i,
+  })),
+);
+const edges: { a: (typeof nodes)[number]; b: (typeof nodes)[number] }[] = [];
+for (let i = 0; i < layers.length - 1; i++) {
+  for (const a of nodes.filter((n) => n.layer === i)) {
+    for (const b of nodes.filter((n) => n.layer === i + 1)) edges.push({ a, b });
+  }
+}
+---
+
+<svg viewBox={`0 0 ${W} ${H}`} class="net w-full" role="img" aria-label="A four-layer neural network diagram." data-reveal>
+  <g fill="none" stroke="var(--rule)" stroke-width="1">
+    {edges.map(({ a, b }, i) => (
+      <path
+        d={`M ${a.x} ${a.y} C ${(a.x + b.x) / 2} ${a.y}, ${(a.x + b.x) / 2} ${b.y}, ${b.x} ${b.y}`}
+        pathLength="1"
+        class="edge"
+        style={`--d: ${a.layer * 350 + (i % 7) * 40}ms`}
+      />
+    ))}
+  </g>
+  <g>
+    {nodes.map((n) => (
+      <circle
+        cx={n.x}
+        cy={n.y}
+        r="6"
+        fill="var(--bg)"
+        stroke={n.layer === layers.length - 1 ? "var(--accent)" : "currentColor"}
+        stroke-width="1.5"
+        class="node"
+        style={`--d: ${n.layer * 350}ms`}
+      />
+    ))}
+  </g>
+</svg>
+
+<style>
+  .net {
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    overflow: visible;
+  }
+  .edge {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .node {
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(0.4);
+  }
+  .net.is-in .edge {
+    animation: draw 900ms var(--ease) forwards;
+    animation-delay: var(--d);
+  }
+  .net.is-in .node {
+    animation: pop 500ms var(--ease) forwards;
+    animation-delay: var(--d);
+  }
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes pop {
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .edge {
+      stroke-dashoffset: 0;
+    }
+    .node {
+      opacity: 1;
+      transform: none;
+    }
+    .net.is-in .edge,
+    .net.is-in .node {
+      animation: none;
+    }
+  }
+</style>

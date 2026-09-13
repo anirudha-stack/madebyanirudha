@@ -118,6 +118,16 @@ narrative), "project" (a finished thing, may have both), "store".
   photography-first portfolios (teenage.engineering, tomsachs.com: the object
   leads). Future direction rounds start from this commitment rather than
   re-offering foreign worlds.
+- **Home page is a scroll narrative, not an index** (decided 13 Sept 2026
+  after the first shipped home read as a content list with no mark or
+  graphics). Hero (mark, name, line, two-sentence about, scroll cue) → 01 By
+  day → 02 By night (sticky isometric device assembling PCB → enclosure →
+  firmware → software as the visitor scrolls) → 03 The proof (flagship
+  photograph) → 04 Where next (Projects / Build logs / Elsewhere with icons).
+  Illustration is allowed on the home page when it is precise line work in
+  the site's own tokens (hairline strokes, kapton accent, mono labels), never
+  costume chrome. The logo mark is the favicon chevron; icons are the in-repo
+  stroke set in `src/components/Icon.astro`.
 
 ## Evidence on Hand
 

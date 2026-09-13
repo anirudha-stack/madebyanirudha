@@ -1,9 +1,11 @@
 ---
 import { getCollection } from "astro:content";
 import { site } from "../site";
+import Logo from "./Logo.astro";
 
 // Sections appear in the nav only once they have something in them.
 const live = (entries: { data: { draft: boolean } }[]) => entries.some((e) => !e.data.draft);
+const hasProjects = live(await getCollection("projects"));
 const hasGuides = live(await getCollection("guides"));
 const hasLogs = live(await getCollection("logs"));
 
@@ -12,11 +14,12 @@ const current = (href: string) => (path === href || path.startsWith(`${href}/`) 
 ---
 
 <header class="mx-auto flex h-14 w-full max-w-measure items-center justify-between px-5 sm:h-16 sm:px-8">
-  <a href="/" class="font-medium tracking-[-0.01em]" aria-current={current("/") && path === "/" ? "page" : undefined}>
-    {site.wordmark}
+  <a href="/" aria-label={site.wordmark} aria-current={path === "/" ? "page" : undefined}>
+    <Logo size={26} wordmark>{site.wordmark}</Logo>
   </a>
   <nav aria-label="Primary">
-    <ul class="flex items-center gap-6 text-[0.9375rem]">
+    <ul class="flex items-center gap-5 text-[0.9375rem] sm:gap-6">
+      {hasProjects && <li><a class="link" href="/projects" aria-current={current("/projects")}>Projects</a></li>}
       {hasGuides && <li><a class="link" href="/guides" aria-current={current("/guides")}>Guides</a></li>}
       {hasLogs && <li><a class="link" href="/logs" aria-current={current("/logs")}>Logs</a></li>}
       <li><a class="link" href={`mailto:${site.email}`}>Email</a></li>
