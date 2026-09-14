@@ -3,11 +3,14 @@
 // drawn from bottom (PCB) to top (software) and the page turns them on one
 // at a time as the visitor scrolls through the matching step. Ghost outlines
 // stay visible so the empty stack still reads as a stack. A final step adds
-// `.is-compact` to the svg and the plates collapse into one object.
+// `.is-compact` to the svg and the plates collapse into one object: the
+// e-paper watch. The box becomes the case (screws, strap), the software
+// window becomes the e-ink face, and the board and chip stay as an x-ray.
 //
 // Each plate is alive once it is on: current flows along the traces, the
 // enclosure prints itself layer by layer, the chip's status LEDs blink, the
-// software cursor ticks.
+// software cursor ticks. A plate the page has scrolled past gets `.is-done`
+// and shows its finished frame instead of a print in progress.
 //
 // Plate-local coordinates are a 140-unit square centred at the origin;
 // `iso` projects them to screen space.
@@ -54,6 +57,32 @@ const printTotal = layerYs.length * printMs.layer;
 const slot = `M ${poly([[-40, -20], [-8, -20], [-8, -12], [-40, -12]])} Z`;
 const button = iso(30, 24);
 
+// Watch: four cap screws in the lid corners, and a strap out of each side
+// wall at `strapY` below the lid. Faces are drawn as closed polygons with a
+// background fill so the strap occludes the wireframe behind it. The far
+// strap starts where it emerges from behind the lid edge, so it reads as
+// tucked under the case.
+const p3 = (x: number, y: number, dy: number) => { const [sx, sy] = iso(x, y); return `${sx.toFixed(1)} ${(sy + dy).toFixed(1)}`; };
+const face = (pts: [number, number, number][]) => `M ${pts.map(([x, y, dy]) => p3(x, y, dy)).join(" L ")} Z`;
+const screws = [[-56, -56], [56, -56], [56, 56], [-56, 56]].map(([x, y]) => iso(x, y));
+const strapY = 14;
+const strapT = 5;
+const strapW = 26;
+const strapEnd = inset + 100;
+const strapFront = {
+  top: face([[inset, -strapW, strapY], [strapEnd, -strapW, strapY], [strapEnd, strapW, strapY], [inset, strapW, strapY]]),
+  side: face([[inset, strapW, strapY], [strapEnd, strapW, strapY], [strapEnd, strapW, strapY + strapT], [inset, strapW, strapY + strapT]]),
+  end: face([[strapEnd, -strapW, strapY], [strapEnd, strapW, strapY], [strapEnd, strapW, strapY + strapT], [strapEnd, -strapW, strapY + strapT]]),
+  holes: [118, 130, 142, 154].map((x) => iso(x, 0)).map(([sx, sy]) => [sx, sy + strapY]),
+};
+// Where the far strap crosses the lid edge in screen space: x + strapY = -inset.
+const backStart = -(inset + strapY);
+const strapBack = {
+  top: face([[backStart, -strapW, strapY], [-strapEnd, -strapW, strapY], [-strapEnd, strapW, strapY], [backStart, strapW, strapY]]),
+  side: face([[backStart, strapW, strapY], [-strapEnd, strapW, strapY], [-strapEnd, strapW, strapY + strapT], [backStart, strapW, strapY + strapT]]),
+  keeper: `M ${p3(-118, -strapW, strapY)} L ${p3(-118, strapW, strapY)} M ${p3(-124, -strapW, strapY)} L ${p3(-124, strapW, strapY)}`,
+};
+
 // Firmware: a chip with pins, a notch, and three status LEDs.
 const chip = diamond(28);
 const pins = [-20, -10, 0, 10, 20]
@@ -90,22 +119,35 @@ const textLines = [
 ].map(([x, y, len]) => `M ${poly([[x, y], [x + len, y]])}`).join(" ");
 const cursor = `M ${poly([[-32, 30], [-26, 30], [-26, 36], [-32, 36]])} Z`;
 
+// Watch face, drawn in the same window once the device is compact: a ruled
+// notebook page with a margin, the sync state, and the time on an amber
+// highlight. The page reads across the strap, as on a wrist: face coords
+// (u along the baseline, v down the page) map to plate (x, y) = (v, -u), so
+// the baseline runs along -y and text is laid flat on the surface with the
+// matching matrix.
+const fp = (u: number, v: number): [number, number] => [v, -u];
+const isoMatrix = "matrix(0.866 -0.5 0.866 0.5 0 0)";
+const W = H - 12;
+const rules = [-44, -32, -20, -8, 4, 16, 28, 40].map((v) => `M ${poly([fp(-W, v), fp(W, v)])}`).join(" ");
+const margin = `M ${poly([fp(-44, -W), fp(-44, W)])} M ${poly([fp(-41, -W), fp(-41, W)])}`;
+const highlight = `M ${poly([fp(-40, -6), fp(18, -6), fp(18, 16), fp(-40, 16)])} Z`;
+
 // Exploded y for each plate, and where it lands when the device compacts:
-// the board inside the box, the chip on the board, the window on the lid.
+// the board inside the case, the chip on the board, the face on the lid.
 const plates = [
   { id: "pcb", label: "PCB", y: 372, compact: 262 },
   { id: "enclosure", label: "Enclosure", y: 282, compact: 250 },
   { id: "firmware", label: "Firmware", y: 192, compact: 256 },
-  { id: "software", label: "Software", y: 102, compact: 246 },
+  { id: "software", label: "Software", y: 102, compact: 250 },
 ];
-const compactLabelY = 250;
+const compactLabel = { x: 200, y: 392 };
 ---
 
 <svg
   viewBox="0 0 460 470"
   class="stack h-full w-full"
   role="img"
-  aria-label="An exploded drawing of a device: a circuit board, an enclosure, a microcontroller, and a software window, stacked, then assembled into one object."
+  aria-label="An exploded drawing of a device: a circuit board, an enclosure, a microcontroller, and a software window, stacked, then assembled into one object: an e-paper wristwatch."
   data-stack
 >
   <g class="ghosts" fill="none" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 5">
@@ -153,8 +195,25 @@ const compactLabelY = 250;
           ))}
           <g class="finish" style={`animation-delay: ${printMs.start + printTotal + 120}ms`}>
             <path d={verticals} class="detail" />
-            <path d={slot} class="detail" />
-            <ellipse cx={button[0]} cy={button[1]} rx="6" ry="3.5" class="detail" />
+            <path d={slot} class="detail lid-detail" />
+            <ellipse cx={button[0]} cy={button[1]} rx="6" ry="3.5" class="detail lid-detail" />
+          </g>
+          <g class="watch">
+            <path d={strapBack.top} fill="var(--bg)" />
+            <path d={strapBack.side} fill="var(--bg)" class="detail" />
+            <path d={strapBack.keeper} class="detail" />
+            <path d={strapFront.side} fill="var(--bg)" class="detail" />
+            <path d={strapFront.end} fill="var(--bg)" class="detail" />
+            <path d={strapFront.top} fill="var(--bg)" />
+            {strapFront.holes.map(([cx, cy]) => (
+              <ellipse cx={cx} cy={cy} rx="2.4" ry="1.4" class="detail" stroke-width="1" />
+            ))}
+            {screws.map(([cx, cy]) => (
+              <g>
+                <ellipse cx={cx} cy={cy} rx="3.4" ry="2" fill="var(--bg)" />
+                <circle cx={cx} cy={cy} r="0.9" fill="currentColor" stroke="none" />
+              </g>
+            ))}
           </g>
           <g
             class="nozzle"
@@ -193,13 +252,28 @@ const compactLabelY = 250;
       <g class="pos" style={`--dy: ${plates[3].compact - plates[3].y}px`}>
         <g class="plate" data-plate="software">
           <path d={outline} class="face" />
-          <path d={win} fill="var(--bg)" />
-          <path d={titleBar} class="detail" />
-          {dots.map(([cx, cy]) => (
-            <circle cx={cx} cy={cy} r="1.6" fill="currentColor" stroke="none" />
-          ))}
-          <path d={textLines} class="detail" />
-          <path d={cursor} fill="var(--accent)" stroke="none" class="cursor" />
+          <g class="screen">
+            <path d={win} fill="var(--bg)" />
+            <g class="term">
+              <path d={titleBar} class="detail" />
+              {dots.map(([cx, cy]) => (
+                <circle cx={cx} cy={cy} r="1.6" fill="currentColor" stroke="none" />
+              ))}
+              <path d={textLines} class="detail" />
+              <path d={cursor} fill="var(--accent)" stroke="none" class="cursor" />
+            </g>
+            <g class="watchface">
+              <path d={rules} class="detail" stroke-width="0.8" />
+              <path d={margin} class="detail" stroke-width="0.8" />
+              <path d={highlight} fill="var(--accent)" stroke="none" />
+              <g transform={isoMatrix} font-family="var(--font-mono)" stroke="none">
+                <text x="-38" y="-24" font-size="6" letter-spacing="0.6" fill="var(--muted)">NO SYNC</text>
+                <text x="-37" y="11" font-size="17" font-weight="600" fill="var(--bg)">10:36</text>
+                <text x="22" y="14" font-size="6" fill="currentColor">PM</text>
+              </g>
+            </g>
+            <path d={win} class="flash" />
+          </g>
         </g>
       </g>
     </g>
@@ -211,7 +285,7 @@ const compactLabelY = 250;
         {String(i + 1).padStart(2, "0")} {pl.label}
       </text>
     ))}
-    <text x="338" y={compactLabelY + 4} class="compact-label">05 Device</text>
+    <text x={compactLabel.x} y={compactLabel.y} text-anchor="middle" class="compact-label">05 Device</text>
   </g>
 </svg>
 
@@ -326,6 +400,17 @@ const compactLabelY = 250;
       opacity: 0;
     }
   }
+  /* Once the visitor is past this step the print is simply finished. */
+  .plate.is-done .layer,
+  .plate.is-done .finish {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+  .plate.is-done .nozzle {
+    animation: none;
+    opacity: 0;
+  }
 
   /* Firmware: status LEDs on their own rhythms. */
   .led {
@@ -431,6 +516,77 @@ const compactLabelY = 250;
       opacity 500ms var(--ease);
   }
 
+  /* The box becomes the watch case: the print bed and the lid cut-outs go,
+     the screws and strap arrive once the plates have landed. */
+  .stack.is-compact [data-plate="enclosure"] .face {
+    opacity: 0;
+  }
+  .lid-detail {
+    transition: opacity 300ms var(--ease);
+  }
+  .stack.is-compact .lid-detail {
+    opacity: 0;
+  }
+  .watch {
+    opacity: 0;
+    transition: opacity 400ms var(--ease);
+  }
+  .stack.is-compact .watch {
+    opacity: 1;
+    transition-delay: 600ms;
+  }
+
+  /* The window shrinks to the screen and does an e-ink refresh: two full
+     flashes, then the face is there all at once. */
+  .screen {
+    transform-box: view-box;
+    transform-origin: 0 0;
+    transition: transform 900ms var(--ease);
+  }
+  .stack.is-compact .screen {
+    transform: scale(0.78);
+  }
+  .term {
+    transition: opacity 300ms var(--ease);
+  }
+  .stack.is-compact .term {
+    opacity: 0;
+  }
+  .watchface {
+    opacity: 0;
+  }
+  .stack.is-compact .watchface {
+    animation: eink 1s steps(1, end) 700ms forwards;
+  }
+  .flash {
+    opacity: 0;
+    fill: currentColor;
+    stroke: none;
+  }
+  .stack.is-compact .flash {
+    animation: flash 1s steps(1, end) 700ms forwards;
+  }
+  @keyframes flash {
+    0%,
+    28% {
+      opacity: 1;
+    }
+    14%,
+    42%,
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes eink {
+    0% {
+      opacity: 0;
+    }
+    56%,
+    100% {
+      opacity: 1;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .plate,
     .plate-label,
@@ -456,6 +612,19 @@ const compactLabelY = 250;
     }
     .led {
       fill-opacity: 1;
+    }
+    .screen,
+    .term,
+    .watch,
+    .lid-detail {
+      transition: none;
+    }
+    .stack.is-compact .flash {
+      animation: none;
+    }
+    .stack.is-compact .watchface {
+      animation: none;
+      opacity: 1;
     }
   }
 </style>

@@ -140,7 +140,7 @@ const elsewhere = [
       </p>
     </div>
 
-    <div class="stack-layout mt-12 sm:mt-16">
+    <div class="stack-layout mt-12 sm:mt-16" data-stack-layout>
       <div class="stack-sticky">
         <LayerStack />
       </div>
@@ -453,6 +453,8 @@ const elsewhere = [
   .steps {
     display: flex;
     flex-direction: column;
+    /* Keeps the finished watch pinned for a moment after the last step. */
+    padding-bottom: 16svh;
   }
   .step {
     min-height: 60svh;
@@ -474,6 +476,9 @@ const elsewhere = [
       height: 76vh;
       padding: 0;
       background: none;
+    }
+    .steps {
+      padding-bottom: 24vh;
     }
     .step {
       min-height: 72vh;
@@ -675,12 +680,20 @@ const elsewhere = [
   const plates = $$("[data-plate]");
   const labels = $$("[data-plate-label]");
   const stack = document.querySelector<SVGElement>("[data-stack]");
+  let current = 0;
   const setStep = (n: number) => {
+    current = n;
+    onStep(n);
     // The last step has no plate of its own: it collapses the four into one.
     stack?.classList.toggle("is-compact", n > plates.length);
     plates.forEach((p, i) => {
       p.classList.toggle("is-on", i < n);
       p.classList.toggle("is-active", i === n - 1);
+      // A plate the visitor has moved past shows its finished state at once,
+      // so a fast scroll never leaves the enclosure half-printed. The flag
+      // clears only when the plate turns off again.
+      if (i < n - 1) p.classList.add("is-done");
+      if (i >= n) p.classList.remove("is-done");
     });
     labels.forEach((l, i) => {
       l.classList.toggle("is-on", i < n);
@@ -688,6 +701,70 @@ const elsewhere = [
     });
     steps.forEach((s, i) => s.classList.toggle("is-active", i === n - 1));
   };
+  // Scroll gate. While the stack is pinned and the watch has not formed yet,
+  // a wheel notch, a swipe, or a key press advances exactly one step; the
+  // page scrolls itself so the step sits mid-screen where the observer fires.
+  // Once the watch has formed the gate lifts for good, so scrolling back up
+  // and down again is never trapped. Scrolling up is always free.
+  const layout = document.querySelector<HTMLElement>("[data-stack-layout]");
+  const formTime = 2600; // collapse + strap + e-ink refresh, from LayerStack
+  const stepTime = 1100; // one plate turning on, plus a breath
+  let formed = reduce || !canObserve || !layout;
+  let formTimer = 0;
+  let busyUntil = 0;
+  function onStep(n: number) {
+    clearTimeout(formTimer);
+    if (n > plates.length && !formed) formTimer = window.setTimeout(() => (formed = true), formTime);
+  }
+  const pinned = () => {
+    if (!layout) return false;
+    const r = layout.getBoundingClientRect();
+    return r.top < innerHeight * 0.5 && r.bottom > innerHeight * 0.5;
+  };
+  const advance = () => {
+    const now = performance.now();
+    if (now < busyUntil) return;
+    busyUntil = now + stepTime;
+    const target = steps[Math.min(current, steps.length - 1)];
+    const r = target.getBoundingClientRect();
+    scrollTo({ top: scrollY + r.top + r.height / 2 - innerHeight / 2, behavior: "smooth" });
+  };
+  // True when the gesture should be swallowed: heading down, inside the
+  // pinned range, watch not yet formed.
+  const gate = (down: boolean) => down && !formed && pinned();
+
+  addEventListener(
+    "wheel",
+    (e) => {
+      if (!gate(e.deltaY > 0)) return;
+      e.preventDefault();
+      advance();
+    },
+    { passive: false },
+  );
+  let touchY = 0;
+  addEventListener("touchstart", (e) => (touchY = e.touches[0].clientY), { passive: true });
+  addEventListener(
+    "touchmove",
+    (e) => {
+      const dy = touchY - e.touches[0].clientY;
+      if (!gate(dy > 0)) return;
+      e.preventDefault();
+      if (dy > 24) {
+        touchY = e.touches[0].clientY;
+        advance();
+      }
+    },
+    { passive: false },
+  );
+  addEventListener("keydown", (e) => {
+    if (e.target !== document.body || e.altKey || e.ctrlKey || e.metaKey) return;
+    const down = e.key === "ArrowDown" || e.key === "PageDown" || (e.key === " " && !e.shiftKey);
+    if (!gate(down)) return;
+    e.preventDefault();
+    advance();
+  });
+
   if (reduce || !canObserve) {
     setStep(steps.length);
   } else {
