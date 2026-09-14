@@ -19,6 +19,7 @@ backups/
 # Raw camera exports stay local; the site uses the exported, resized copies.
 src/assets/**/DSC*.JPG
 src/assets/**/DSC*.jpg
+src/assets/**/[Gg]ood*.JPG
 
 # impeccable session state (screenshots, hook cache, decision logs)
 .impeccable/review/
