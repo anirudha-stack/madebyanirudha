@@ -1,12 +1,12 @@
 ---
-title: "Fluxon: a face nobody has seen before, every five minutes"
+title: "Chronos: a face nobody has seen before, every five minutes"
 description: "An LLM on a free tier designs the faces, Modal renders them for the e-paper panel, and the ESP32-C3 pulls one per wake. Built and on the wrist in one evening."
 date: 2026-09-16
 cover: ../../assets/WristWatch/watch-nebula-hand.jpg
 draft: false
 ---
 
-Until this evening the [e-paper watch](/projects/eink-watch) had thirteen faces, hand-ported and compiled into the firmware. Thirteen is enough to get bored of. The idea: never show the same face twice. Every five minutes, when the watch wakes anyway, it asks a server for a face that did not exist a few minutes ago. Two constraints, because this is a hobby: a free-tier language model, and Modal for hosting.
+Until this evening [Chronos](/projects/chronos), the e-paper watch, had thirteen faces, hand-ported and compiled into the firmware. Thirteen is enough to get bored of. The idea: never show the same face twice. Every five minutes, when the watch wakes anyway, it asks a server for a face that did not exist a few minutes ago. Two constraints, because this is a hobby: a free-tier language model, and Modal for hosting.
 
 The rule that made it fit in one evening is that the LLM never draws a pixel and the watch never waits on the LLM. The model writes a small JSON drawing program: rects, circles, arcs, bars, tick rings, dots and hands driven by time variables, and text with `{H}` and `{MM}` placeholders. A scheduled job on Modal asks Gemini 2.5 Flash for four designs every 20 minutes, validates them, and banks the survivors in a Volume. A web endpoint pops a design that has never been served, renders it with the watch's own wall-clock time, and packs it into the panel's native format: two bits per pixel, `00` black, `01` white, `10` yellow, `11` red, four pixels per byte MSB-first, 10 000 bytes per frame. A packed frame decoded the panel's way diffed to zero against the PNG. The firmware just writes the bytes.
 
@@ -18,7 +18,7 @@ The first Gemini run returned four designs and the validator passed all four. Tw
 
 The checks now run on the rendered glyph mask. Text contrast against whatever is under it: the digits must come out visible at least 85 % of the time. Artwork crossing the numerals: no more than 2 % of the glyph box. Text on text, and anything off canvas. Each design is tried at three test times, the widest being 10:58 PM on Wednesday 30 September. A failure goes back to the model once with the validator's complaints, and the measured font metrics went into the prompt so the model can work out its own clear zones instead of guessing. Yield went from one clean design in four to seven in eight, and the logs now read like a patient reviewer: "artwork runs through the text 'MON 15 JUN' (8 % of its box)".
 
-![Modal logs for the fluxon-faces app: two GET /faces responses at 6.99 s and 8.36 s, two lines of LLM 429, retrying, then the generator's verdicts, added Docket, rejected Path, Flow and Strata, each with the validator's reason in plain English.](../../assets/WristWatch/facegen-modal-logs.jpg)
+![Modal logs for the faces app: two GET /faces responses at 6.99 s and 8.36 s, two lines of LLM 429, retrying, then the generator's verdicts, added Docket, rejected Path, Flow and Strata, each with the validator's reason in plain English.](../../assets/WristWatch/facegen-modal-logs.jpg)
 
 The free tier answers 429 and 503 often enough that one run was lost before retries went in, and the API key had been visible in the logged failure URL; it lives in a header now. The first deploy returned 422 on every route: `from __future__ import annotations` plus FastAPI imported inside the function, so the `Request` hint could not be resolved.
 
@@ -30,7 +30,7 @@ The free tier answers 429 and 503 often enough that one run was lost before retr
 
 First WiFi wake: the TLS handshake failed with `SSL - The connection indicated an EOF`. Second: every TCP connect to port 443 timed out, Modal, example.com and Google alike, while DNS and NTP over UDP worked fine. Third, nothing changed: 27.7 s on the radio, and the watch showed Nebula.
 
-![Fluxon held straight on over a black cutting mat, showing the Nebula face: WED 16 SEP and 10:08 in white on black, a red rule, and a grid of sixty dots with the first eight filled red.](../../assets/WristWatch/watch-nebula-mat.jpg)
+![Chronos held straight on over a black cutting mat, showing the Nebula face: WED 16 SEP and 10:08 in white on black, a red rule, and a grid of sixty dots with the first eight filled red.](../../assets/WristWatch/watch-nebula-mat.jpg)
 
 Nebula is ten elements of JSON: a black page, the time top right, a red rule, and a ten-by-six grid of dots that fills one per minute. Here it is re-rendered from its stored program a minute later, which is what the endpoint packed and the panel drew.
 

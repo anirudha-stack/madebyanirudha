@@ -36,7 +36,7 @@ served on localhost for review. Never commit or push; the user reviews first, th
 
 4. **Write `src/content/logs/<slug>.mdx`.**
    - Slug: `<project>-<what-this-stretch-was-about>`, short, kebab-case, e.g.
-     `eink-watch-refresh-ghosting`. Check it does not already exist.
+     `chronos-refresh-ghosting`. Check it does not already exist.
    - Frontmatter, exactly the `logs` schema in `src/content.config.ts`:
      ```yaml
      ---
