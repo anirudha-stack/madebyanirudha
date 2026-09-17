@@ -1,0 +1,42 @@
+---
+title: "Chronos: first packets over LoRa, and a freeze at 10 dBm"
+description: "The unused E22-900MM22S on the watch board comes alive: a wire on the wrong pad, a clean link at 5 dBm, and two boards that lock up on their own transmissions at 10."
+date: 2026-09-17
+draft: false
+---
+
+The [Chronos](/projects/chronos) board has carried an Ebyte E22-900MM22S since the first revision: an SX1262 LoRa module for 850 to 930 MHz, sharing the SPI bus with the e-paper panel, never once powered on by the firmware. Today it was. The goal was the smallest possible thing, two boards pinging each other with raw RadioLib, before any thought of talking to a Meshtastic mesh.
+
+## Reading the schematic back out of a PDF
+
+The schematic is an Altium PDF export, and the drawing is not what I read. The PDF embeds its own netlist as pin and net tokens (`PIU5011` is U5 pin 11, `NLLORA0BUSY` is the net LORA_BUSY), so every connection was reconstructed from those rather than traced by eye. The LoRa side: NSS on GPIO1, DIO1 on GPIO5, NRST on GPIO8 with a 10K pull-up, BUSY on GPIO0, RXEN on GPIO21 with a 100K pull-up. The module's TXEN is tied to its own DIO2, deliberately: the SX1262 raises TXEN itself and the MCU only drives RXEN. SPI is shared with the panel on SCK 6, MOSI 7, MISO 2.
+
+Two things fell out of the same exercise. The BOM in the PDF says W25Q32; the chip on the board is a W25Q64, so the PDF goes on the V2 list. And pin 6 of the E22, the ANT pad, is connected to nothing. The MM22S has no IPEX connector, so an antenna has to be soldered straight to the pad.
+
+## 86 mm of wire
+
+Quarter-wave at 866 MHz is 86.6 mm in free space, about 82 mm for insulated wire. I soldered 86 mm of plain wire to both boards. The black FPC antenna that ships with XIAO boards is 2.4 GHz and stayed in the bag.
+
+`lora.cpp` is a RadioLib 7.7.1 wrapper with the pin map and the RF-switch setup: `setDio2AsRfSwitch(true)`, `setRfSwitchPins(RXEN, NC)`, current limit 140 mA. It asks for a 1.8 V TCXO; RadioLib sees `XOSC_START_ERR` and falls back to a plain crystal by itself, so the MM22S has no TCXO. Modem at 866.0 MHz, 125 kHz, SF9, CR 4/7, sync word 0x12. The ping-pong test is its own source file, excluded from the watch build and built by two PlatformIO envs, `lora_a` and `lora_b`.
+
+First contact: link up, 44 consecutive pings, round trip 380 ms. RSSI −108 dBm. The boards were 8 cm apart. I had expected −10 to −20 dBm, and at 1 m it was −120 to −127 with packets going missing. That is RF leaking out of the module rather than radiating, because the wire was soldered to the wrong pad. Moved to pad 6: −33 dBm at 8 cm, SNR 10 to 12 dB. A clean link, at 8 cm.
+
+## Then both boards crashed on transmit
+
+The first transmission after the antenna fix produced an interrupt-watchdog panic, on both boards. Until then the module had been transmitting into nothing; now it was actually radiating, and something did not like it.
+
+So the test grew a power sweep. The initiator steps through −9, 0, 5, 10, 14, 17, 20 and 22 dBm, 25 pings per level, announcing the level in each `PING n p` so the responder matches it and replies `PONG n rssi snr`. Each board keeps a crash record in RTC memory, reads `esp_reset_reason()` at boot, logs the crash against the power it was at, retries the level once, then skips it. The record prints on every boot and is drawn on the e-paper in red, the first time the panel has shown anything useful about the radio.
+
+The record briefly reported itself lost, with a note blaming a rail dip. That was a firmware bug: `RTC_DATA_ATTR` is re-initialised by the bootloader on every reset except a deep-sleep wake. `RTC_NOINIT_ATTR` survives everything but a power cycle.
+
+The freezes also took the serial monitor with them for minutes at a time, because the board had hung with nothing left running to reset it. Hence `watchdog.cpp`: the RTC watchdog, clocked from the internal RC oscillator, whose expiry is a hardware reset. A board whose main clock has died still reboots. 30 s timeout, fed from the loop and while waiting on the radio. Compiled into the watch firmware too, not called there yet.
+
+The sweep's verdict is exact and unhelpful. Clean at −9, 0 and 5 dBm. At 10 dBm both boards freeze on their own first transmission, every time: `at 10 dBm after 0 packets (INT_WDT)`, again on the retry, again at 14. On USB and on battery. Receiving the other board's 10 dBm packets at −27 dBm is fine; only sending kills them.
+
+Discarded on the way: battery headroom (crashes on USB too), the PC's USB host choking on RF (the initiator dies between its own TX and the print that should follow), a DIO1 interrupt storm (the counter stayed at exactly +2 per round), and flash bus mode (QIO to DIO changed nothing).
+
+The 5 to 10 dBm step is roughly 10 mA of PA current, which makes a plain supply dip unlikely. The working hypothesis is the board's own near field, or RF conducted back through the module's ground and VCC. The experiments that separate those: the antenna on a 20 to 30 cm coax pigtail, then 100 µF across the E22's supply pads. The answer decides what PCB V2 gets, an antenna keep-out or more decoupling. Probably both, given the 3.3 V rail currently rests on a 4 V-rated 10 µF at the buck and 4.7 µF at the module.
+
+## Where it stands
+
+Operating default is 5 dBm, set in `lora.h`, so protocol work can carry on. Step two is speaking the Meshtastic over-the-air protocol from inside the watch firmware rather than porting Meshtastic itself, which would replace the watch and does not know the four-colour panel: LongFast modem settings, the 16-byte header, AES-128-CTR with the default channel key, the nanopb `Data` protobuf. Step three is the real design problem, how a watch that deep-sleeps for five minutes at a time listens to a mesh; SX1262 RX duty cycling with a DIO1 wake into light sleep is the current idea. No range test has been done, and none of today's work is committed.
