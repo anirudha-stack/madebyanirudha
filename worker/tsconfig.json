@@ -1,0 +1,18 @@
+{
+  // The Worker runs on Cloudflare's runtime, not in the browser, so it is
+  // typed against @cloudflare/workers-types instead of the DOM lib the site
+  // uses. Keeping it in its own tsconfig avoids clashing globals (Request,
+  // Response, WebSocket) between the two environments. The root tsconfig
+  // excludes this directory for the same reason.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["**/*.ts"]
+}

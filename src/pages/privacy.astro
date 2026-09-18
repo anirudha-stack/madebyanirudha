@@ -31,7 +31,7 @@ const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", ye
       <p>As close to nothing as I can manage.</p>
       <ul>
         <li><strong>No cookies.</strong> The site sets none and needs none.</li>
-        <li><strong>No advertising, no cross-site tracking.</strong> No Google Analytics, no pixels, no fingerprinting, no ad networks. The one script the site loads is a privacy-friendly visitor counter, described below.</li>
+        <li><strong>No third-party analytics or tracking.</strong> No Google Analytics, no pixels, no fingerprinting, no third-party scripts. The only thing that counts anything is a first-party visitor tally I run myself, described below.</li>
         <li><strong>No accounts or forms.</strong> There is nothing to sign up for and nothing to fill in.</li>
         <li><strong>No third-party fonts or embeds.</strong> Fonts are served from this domain. Photographs and drawings are hosted here.</li>
       </ul>
@@ -40,20 +40,17 @@ const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", ye
         your browser's behaviour, on your device, and you control it.
       </p>
 
-      <h2>Analytics</h2>
+      <h2>The visitor count</h2>
       <p>
-        The visitor count in the footer comes from
-        <a href="https://www.goatcounter.com/" rel="noopener">GoatCounter</a>, a privacy-focused, open-source
-        analytics tool. It sets no cookies and does not track you across sites or build any profile of you. On each
-        page view it records the page address, the page you arrived from, your browser's user-agent string and
-        rough screen size, and the country the request came from.
+        The number in the footer is my own, running on this site's own Cloudflare infrastructure — there is no
+        analytics company involved and no third-party script. When you open a page, your browser asks that function
+        for the current total and, the first time a given browser visits, adds one to it. The only thing kept is that
+        single running number. No cookies, no IP addresses, no user-agents, nothing about you is stored to produce it.
       </p>
       <p>
-        To avoid counting the same person twice in a day, it derives a temporary hash from your IP address and
-        user-agent. The IP address itself is never stored, and that hash cannot be turned back into you. GoatCounter
-        holds only this aggregate, non-identifying data, on its own servers, under its
-        <a href="https://www.goatcounter.com/help/privacy" rel="noopener">privacy policy</a>. I use it for one thing:
-        to see roughly how many people visit.
+        So that your browser is not counted again on every visit, it remembers that it has been counted using one
+        small flag in its own local storage, on your device. That flag never leaves your browser. Clear your site
+        data and the most that happens is you are counted once more.
       </p>
 
       <h2>Hosting</h2>

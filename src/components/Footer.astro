@@ -3,11 +3,6 @@ import { site } from "../site";
 
 const year = new Date().getFullYear();
 const links = [{ label: site.email, href: `mailto:${site.email}` }, ...site.links];
-
-// GoatCounter exposes a public running total at /counter/TOTAL.json. Empty when
-// analytics are disabled, which also drops the client script below.
-const gc = site.analytics.goatcounter;
-const counterEndpoint = gc ? `https://${gc}.goatcounter.com/counter/TOTAL.json` : "";
 ---
 
 <footer class="mx-auto mt-24 w-full max-w-measure px-5 pb-10 sm:px-8">
@@ -29,25 +24,46 @@ const counterEndpoint = gc ? `https://${gc}.goatcounter.com/counter/TOTAL.json` 
   </div>
 </footer>
 
-{
-  counterEndpoint && (
-    <script define:vars={{ counterEndpoint }}>
-      // Pull the site-wide unique-visitor total from GoatCounter's public
-      // counter and reveal the footer slot. Progressive enhancement only: any
-      // failure leaves the slot hidden rather than showing a broken figure.
-      fetch(counterEndpoint, { headers: { Accept: "application/json" } })
-        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-        .then((data) => {
-          // count_unique = distinct visitors; count = raw page views.
-          const total = data.count_unique || data.count;
-          const slot = document.querySelector("[data-views]");
-          const out = document.querySelector("[data-views-count]");
-          if (total && slot && out) {
-            out.textContent = total; // already locale-formatted by GoatCounter
-            slot.hidden = false;
-          }
-        })
-        .catch(() => {});
-    </script>
-  )
-}
+<script>
+  // First-party visitor counter. Reads the running total from /api/views and
+  // reveals the footer slot; the first time a given browser visits, it also
+  // records the visit. Progressive enhancement only — any failure (no JS,
+  // offline, blocked storage) simply leaves the slot hidden.
+  (async () => {
+    const STORAGE_KEY = "mba:counted";
+
+    // A browser we have never counted contributes one visit; every later visit
+    // is read-only. localStorage may throw (private mode, blocked storage), in
+    // which case we fall back to a read so we never inflate the total.
+    let firstVisit = false;
+    try {
+      firstVisit = !localStorage.getItem(STORAGE_KEY);
+    } catch {
+      firstVisit = false;
+    }
+
+    try {
+      const res = await fetch("/api/views", { method: firstVisit ? "POST" : "GET" });
+      if (!res.ok) return;
+      const { total } = (await res.json()) as { total?: number };
+      if (typeof total !== "number") return;
+
+      const slot = document.querySelector<HTMLElement>("[data-views]");
+      const out = document.querySelector<HTMLElement>("[data-views-count]");
+      if (!slot || !out) return;
+
+      out.textContent = new Intl.NumberFormat("en-GB").format(total);
+      slot.hidden = false;
+
+      if (firstVisit) {
+        try {
+          localStorage.setItem(STORAGE_KEY, "1");
+        } catch {
+          // Nothing to do: worst case this browser is counted again next visit.
+        }
+      }
+    } catch {
+      // Network or parse failure: leave the count hidden rather than guess.
+    }
+  })();
+</script>
