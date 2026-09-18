@@ -2,24 +2,32 @@
   // Cloudflare Worker — madebyanirudha.in
   // Account: madebyanirudha@gmail.com (must match the account holding the zone).
   //
-  // Phase 1: an Astro static site. `npm run build` writes ./dist (prerendered
-  // pages plus everything in ./public, e.g. _headers). No `main` entry point,
-  // so Cloudflare serves ./dist straight off the edge with no Worker
-  // invocation and no cost.
+  // The site is a prerendered Astro bundle: `npm run build` writes ./dist
+  // (pages plus everything in ./public, e.g. _headers). A small Worker sits in
+  // front of it for exactly one dynamic route, /api/views (the visitor
+  // counter). Every other request is handed straight to the static assets via
+  // the ASSETS binding, so the pages still serve off the edge with no per-page
+  // Worker cost.
   //
-  // When a route needs the server (store checkout), add @astrojs/cloudflare
-  // for that route only; the adapter emits the Worker and this becomes:
-  //   "main": "dist/_worker.js/index.js",
-  //   "assets": { "directory": "./dist", "binding": "ASSETS" },
-  // ...then the same project serves static assets AND server-side routes.
+  // If a heavier server route is ever needed (store checkout), reach for
+  // @astrojs/cloudflare for that route; this hand-written Worker stays as the
+  // front door.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "madebyanirudha",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-08-24",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   },
+  // The visitor total lives in one Durable Object (SQLite-backed, free tier).
+  // Serialised access makes the increment atomic, so counts never race.
+  "durable_objects": {
+    "bindings": [{ "name": "COUNTER", "class_name": "Counter" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Counter"] }],
   // Custom domains. Cloudflare creates and manages the proxied DNS records for
   // these, which is also what evicts the GoDaddy parking records.
   // TODO: once a Worker script exists, 301 www -> apex for canonicalisation.

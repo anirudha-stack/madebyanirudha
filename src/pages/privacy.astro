@@ -4,7 +4,7 @@ import { site } from "../site";
 
 // Keep this page true. If the site starts collecting anything new (analytics,
 // a form, a store), update the relevant section and the date below.
-const updated = new Date("2026-09-14");
+const updated = new Date("2026-09-18");
 const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" });
 ---
 
@@ -28,16 +28,29 @@ const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", ye
       </p>
 
       <h2>What the site collects</h2>
-      <p>Nothing, by design.</p>
+      <p>As close to nothing as I can manage.</p>
       <ul>
         <li><strong>No cookies.</strong> The site sets none and needs none.</li>
-        <li><strong>No analytics or tracking.</strong> No Google Analytics, no pixels, no fingerprinting, no third-party scripts.</li>
+        <li><strong>No third-party analytics or tracking.</strong> No Google Analytics, no pixels, no fingerprinting, no third-party scripts. The only thing that counts anything is a first-party visitor tally I run myself, described below.</li>
         <li><strong>No accounts or forms.</strong> There is nothing to sign up for and nothing to fill in.</li>
         <li><strong>No third-party fonts or embeds.</strong> Fonts are served from this domain. Photographs and drawings are hosted here.</li>
       </ul>
       <p>
         Your browser may keep its own copy of pages and images in its cache so they load faster next time. That is
         your browser's behaviour, on your device, and you control it.
+      </p>
+
+      <h2>The visitor count</h2>
+      <p>
+        The number in the footer is my own, running on this site's own Cloudflare infrastructure — there is no
+        analytics company involved and no third-party script. When you open a page, your browser asks that function
+        for the current total and, the first time a given browser visits, adds one to it. The only thing kept is that
+        single running number. No cookies, no IP addresses, no user-agents, nothing about you is stored to produce it.
+      </p>
+      <p>
+        So that your browser is not counted again on every visit, it remembers that it has been counted using one
+        small flag in its own local storage, on your device. That flag never leaves your browser. Clear your site
+        data and the most that happens is you are counted once more.
       </p>
 
       <h2>Hosting</h2>

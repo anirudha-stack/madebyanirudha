@@ -16,6 +16,7 @@
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
     "@biomejs/biome": "^2.5.13",
+    "@cloudflare/workers-types": "^5.20260918.1",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource-variable/schibsted-grotesk": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",

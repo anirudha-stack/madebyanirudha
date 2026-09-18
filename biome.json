@@ -3,6 +3,7 @@
   "files": {
     "includes": [
       "src/**",
+      "worker/**",
       "*.mjs",
       "*.ts",
       "*.json",
