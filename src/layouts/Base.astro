@@ -46,5 +46,15 @@ const canonical = new URL(Astro.url.pathname, site.domain).href;
       <slot />
     </main>
     <Footer />
+    {
+      site.analytics.goatcounter && (
+        <script
+          is:inline
+          async
+          data-goatcounter={`https://${site.analytics.goatcounter}.goatcounter.com/count`}
+          src="//gc.zgo.at/count.js"
+        />
+      )
+    }
   </body>
 </html>

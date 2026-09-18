@@ -3,6 +3,11 @@ import { site } from "../site";
 
 const year = new Date().getFullYear();
 const links = [{ label: site.email, href: `mailto:${site.email}` }, ...site.links];
+
+// GoatCounter exposes a public running total at /counter/TOTAL.json. Empty when
+// analytics are disabled, which also drops the client script below.
+const gc = site.analytics.goatcounter;
+const counterEndpoint = gc ? `https://${gc}.goatcounter.com/counter/TOTAL.json` : "";
 ---
 
 <footer class="mx-auto mt-24 w-full max-w-measure px-5 pb-10 sm:px-8">
@@ -15,7 +20,34 @@ const links = [{ label: site.email, href: `mailto:${site.email}` }, ...site.link
     <p class="flex flex-wrap gap-x-5 gap-y-2 text-muted">
       <a class="link" href="/privacy">Privacy</a>
       <a class="link" href="/rss.xml">RSS</a>
+      {/* Usage instrumentation. Hidden until the real count loads client-side,
+          so a static build never ships a stale or placeholder figure and a
+          no-JS visit simply shows nothing. */}
+      <span data-views hidden><span class="num" data-views-count></span> visitors</span>
       <span><span class="num">{year}</span> · {site.wordmark}</span>
     </p>
   </div>
 </footer>
+
+{
+  counterEndpoint && (
+    <script define:vars={{ counterEndpoint }}>
+      // Pull the site-wide unique-visitor total from GoatCounter's public
+      // counter and reveal the footer slot. Progressive enhancement only: any
+      // failure leaves the slot hidden rather than showing a broken figure.
+      fetch(counterEndpoint, { headers: { Accept: "application/json" } })
+        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then((data) => {
+          // count_unique = distinct visitors; count = raw page views.
+          const total = data.count_unique || data.count;
+          const slot = document.querySelector("[data-views]");
+          const out = document.querySelector("[data-views-count]");
+          if (total && slot && out) {
+            out.textContent = total; // already locale-formatted by GoatCounter
+            slot.hidden = false;
+          }
+        })
+        .catch(() => {});
+    </script>
+  )
+}
