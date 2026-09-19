@@ -16,6 +16,12 @@
   "name": "madebyanirudha",
   "main": "worker/index.ts",
   "compatibility_date": "2026-08-24",
+  // The site is only ever served on the custom domains below, never on a
+  // *.workers.dev URL. Disabling that route keeps the canonical domain the one
+  // way in, and — because the account has no workers.dev subdomain — is also
+  // what lets `wrangler deploy` publish a Worker at all (otherwise it fails
+  // with "You need a workers.dev subdomain", API error 10063).
+  "workers_dev": false,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
