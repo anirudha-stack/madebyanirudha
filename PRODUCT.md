@@ -123,7 +123,7 @@ narrative), "project" (a finished thing, may have both), "store".
   graphics). Hero (mark, name, line, two-sentence about, scroll cue) → 01 By
   day → 02 By night (sticky isometric device assembling PCB → enclosure →
   firmware → software as the visitor scrolls) → 03 The proof (flagship
-  photograph) → 04 Where next (Projects / Build logs / Elsewhere with icons).
+  photograph) → 04 Where to next (Projects / Build logs / Elsewhere with icons).
   Illustration is allowed on the home page when it is precise line work in
   the site's own tokens (hairline strokes, kapton accent, mono labels), never
   costume chrome. The logo mark is the favicon chevron; icons are the in-repo

@@ -3,7 +3,6 @@ import { Image } from "astro:assets";
 import { getCollection } from "astro:content";
 import Icon from "../components/Icon.astro";
 import LayerStack from "../components/LayerStack.astro";
-import Ledger from "../components/Ledger.astro";
 import Logo from "../components/Logo.astro";
 import NetGraph from "../components/NetGraph.astro";
 import Base from "../layouts/Base.astro";
@@ -13,6 +12,24 @@ const projects = (await getCollection("projects", ({ data }) => !data.draft)).so
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
 const flagship = projects.find((p) => p.data.flagship) ?? projects[0];
+
+// Every photo of every project: cover first, then the gallery. Dealt out
+// round-robin so the static order already alternates between projects; the
+// browser then shuffles it on each visit.
+const perProject = projects.map((p) =>
+  [{ src: p.data.cover, alt: p.data.coverAlt }, ...p.data.gallery].map((ph) => ({ ...ph, id: p.id, title: p.data.title })),
+);
+const proofPhotos: (typeof perProject)[number] = [];
+const seen = new Set<string>();
+for (let i = 0; perProject.some((l) => i < l.length); i++) {
+  for (const list of perProject) {
+    const ph = list[i];
+    if (ph && !seen.has(ph.src.src)) {
+      seen.add(ph.src.src);
+      proofPhotos.push(ph);
+    }
+  }
+}
 const live = (entries: { data: { draft: boolean } }[]) => entries.filter((e) => !e.data.draft).length;
 const logCount = live(await getCollection("logs"));
 const guideCount = live(await getCollection("guides"));
@@ -21,7 +38,7 @@ const chapters = [
   { id: "day", n: "01", label: "By day" },
   { id: "night", n: "02", label: "By night" },
   { id: "proof", n: "03", label: "The proof" },
-  { id: "next", n: "04", label: "Where next" },
+  { id: "next", n: "04", label: "Where to next" },
 ];
 
 // The four steps of the "by night" chapter, in build order. Each turns on
@@ -55,7 +72,7 @@ const steps = [
     id: "device",
     name: "Device",
     title: "Then it is one thing.",
-    body: "Board in the box, chip on the board, screen on the lid. Four layers you can hold in one hand, and hand to someone else.",
+    body: "Board in the box, chip on the board, screen on the lid. Four layers you can hold in one hand, and hand to someone else. A watch, a micromouse and a keyboard so far.",
   },
 ];
 
@@ -157,7 +174,7 @@ const elsewhere = [
   </section>
 
   <!-- 03 The proof -->
-  {flagship && (
+  {projects.length > 0 && (
     <section id="proof" class="chapter" data-chapter="proof" aria-labelledby="proof-title">
       <div class="max-w-[60ch]">
         <p class="eyebrow" data-reveal><span class="num">03</span> The proof</p>
@@ -165,42 +182,45 @@ const elsewhere = [
           Every claim points at a thing.
         </h2>
       </div>
-      <a href={`/projects/${flagship.id}`} class="photo bleed mt-10 block sm:mt-12" aria-label={`${flagship.data.title}: see the build`}>
-        <Image
-          src={flagship.data.cover}
-          alt={flagship.data.coverAlt}
-          widths={[640, 960, 1280, 1600, 2240]}
-          sizes="100vw"
-          class="photo-img aspect-[4/3] w-full object-cover sm:aspect-[16/9] lg:aspect-[21/9]"
-          style="view-transition-name: flagship-cover"
-        />
-        <span class="photo-tag">
-          <span class="num">{flagship.data.date.getFullYear()}</span>
-          <span>{flagship.data.title}</span>
-        </span>
-      </a>
-      <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-16">
-        <div>
-          <h3 class="text-[1.5rem] tracking-[-0.02em] sm:text-[1.75rem]" data-reveal>
-            <a href={`/projects/${flagship.id}`}>{flagship.data.title}</a>
-          </h3>
-          <p class="mt-2 max-w-[56ch] text-[1.0625rem] text-muted" data-reveal style="--d: 80ms">{flagship.data.summary}</p>
-          <a href={`/projects/${flagship.id}`} class="mt-5 inline-flex items-center gap-2 text-[0.9375rem]" data-reveal style="--d: 160ms">
-            <span class="link">See the build</span>
-            <Icon name="arrow-right" size={16} class="text-accent" />
-          </a>
-        </div>
-        <div data-reveal style="--d: 120ms">
-          <Ledger layers={flagship.data.layers} />
-        </div>
+      <div class="reel bleed mt-10 sm:mt-12" data-reel>
+        <ul class="reel-track" data-reel-track>
+          {proofPhotos.map((ph) => (
+            <li class="reel-item">
+              <a href={`/projects/${ph.id}`} class="reel-link" aria-label={`${ph.title}: see the build`}>
+                <Image
+                  src={ph.src}
+                  alt={ph.alt}
+                  widths={[640, 960, 1280]}
+                  sizes="800px"
+                  class="reel-img"
+                />
+                <span class="photo-tag">{ph.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
+      <ul class="mt-10 grid gap-8 md:grid-cols-3 lg:gap-12">
+        {projects.map((p, i) => (
+          <li data-reveal style={`--d: ${i * 80}ms`}>
+            <h3 class="text-[1.5rem] tracking-[-0.02em] sm:text-[1.75rem]">
+              <a href={`/projects/${p.id}`}>{p.data.title}</a>
+            </h3>
+            <p class="mt-2 max-w-[44ch] text-[1.0625rem] text-muted">{p.data.summary}</p>
+            <a href={`/projects/${p.id}`} class="mt-4 inline-flex items-center gap-2 text-[0.9375rem]">
+              <span class="link">See the build</span>
+              <Icon name="arrow-right" size={16} class="text-accent" />
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   )}
 
-  <!-- 04 Where next -->
+  <!-- 04 Where to next -->
   <section id="next" class="chapter chapter-last" data-chapter="next" aria-labelledby="next-title">
     <div class="max-w-[60ch]">
-      <p class="eyebrow" data-reveal><span class="num">04</span> Where next</p>
+      <p class="eyebrow" data-reveal><span class="num">04</span> Where to next</p>
       <h2 id="next-title" class="mt-4 text-[2rem] leading-[1.08] tracking-[-0.03em] sm:text-[2.75rem]" data-reveal style="--d: 80ms">
         Pick a door.
       </h2>
@@ -213,16 +233,20 @@ const elsewhere = [
           <span class="door-title">Projects</span>
           <span class="door-body">
             Finished things, all four layers on the table.{" "}
-            {flagship && <>{flagship.data.title} is one of them.</>}
+            {projects.length > 0 && <>{projects.length} so far.</>}
           </span>
-          {flagship && (
-            <Image
-              src={flagship.data.cover}
-              alt=""
-              widths={[320, 640]}
-              sizes="(min-width: 768px) 340px, 100vw"
-              class="door-thumb aspect-[16/10] w-full object-cover"
-            />
+          {proofPhotos.length > 0 && (
+            <span class="door-thumb" data-door-reel aria-hidden="true">
+              {proofPhotos.map((ph, i) => (
+                <Image
+                  src={ph.src}
+                  alt=""
+                  widths={[320, 640]}
+                  sizes="(min-width: 768px) 340px, 100vw"
+                  class:list={["door-photo", i === 0 && "is-current"]}
+                />
+              ))}
+            </span>
           )}
           <span class="door-cta"><span class="link">Check my projects</span> <Icon name="arrow-right" size={16} class="text-accent" /></span>
         </a>
@@ -489,47 +513,62 @@ const elsewhere = [
     }
   }
 
-  /* Proof photograph */
-  .photo {
-    position: relative;
+  /* Proof reel: every project photo on one slow belt. Items use a right
+     margin rather than a gap so that half the track is exactly one copy. */
+  .reel {
+    --reel-h: clamp(15rem, 50svh, 32rem);
+    --reel-fade: 4rem;
     overflow: hidden;
+    mask-image: linear-gradient(90deg, transparent, #000 var(--reel-fade), #000 calc(100% - var(--reel-fade)), transparent);
+  }
+  .reel-track {
+    display: flex;
+    width: max-content;
+    animation: reel var(--reel-dur, 90s) linear infinite;
+  }
+  .reel:hover .reel-track,
+  .reel:focus-within .reel-track {
+    animation-play-state: paused;
+  }
+  @keyframes reel {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  .reel-item {
+    flex: none;
+    margin-right: 0.75rem;
+  }
+  .reel-link {
+    position: relative;
+    display: block;
+    height: var(--reel-h);
+    overflow: hidden;
+  }
+  .reel-img {
+    display: block;
+    height: 100%;
+    width: auto;
+    max-width: none;
+    object-fit: cover;
   }
   .photo-tag {
     position: absolute;
-    left: 1.25rem;
-    bottom: 1.25rem;
-    display: inline-flex;
-    gap: 0.75rem;
-    align-items: baseline;
-    padding: 0.4rem 0.7rem;
+    left: 0.75rem;
+    bottom: 0.75rem;
+    padding: 0.35rem 0.65rem;
     font-size: 0.875rem;
     color: #ececee;
     background: rgb(15 15 16 / 0.72);
     backdrop-filter: blur(6px);
   }
-  @media (min-width: 640px) {
-    .photo-tag {
-      left: 2rem;
-      bottom: 2rem;
+  @media (prefers-reduced-motion: reduce) {
+    .reel {
+      overflow-x: auto;
+      mask-image: none;
     }
-  }
-  @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) {
-      .photo-img {
-        animation: photo-in linear both;
-        animation-timeline: view();
-        animation-range: entry 0% cover 55%;
-      }
-      @keyframes photo-in {
-        from {
-          transform: scale(1.14);
-          filter: saturate(0.6);
-        }
-        to {
-          transform: scale(1);
-          filter: saturate(1);
-        }
-      }
+    .reel-track {
+      animation: none;
     }
   }
 
@@ -564,8 +603,32 @@ const elsewhere = [
     font-size: 0.9375rem;
     line-height: 1.5;
   }
+  /* Projects door: the photos stack in one frame. The current one drifts
+     aside while it dissolves; the next is already underneath. */
   .door-thumb {
+    position: relative;
+    display: block;
     margin-top: 1.25rem;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+  }
+  .door-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition:
+      opacity 1100ms var(--ease),
+      transform 1100ms var(--ease);
+  }
+  .door-photo.is-current {
+    opacity: 1;
+  }
+  .door-photo.is-leaving {
+    opacity: 0;
+    transform: translateX(-14%);
   }
   .door-meta {
     margin-top: 1.25rem;
@@ -649,6 +712,9 @@ const elsewhere = [
     a.door:hover {
       transform: none;
     }
+    .door-photo {
+      transition: none;
+    }
   }
 </style>
 
@@ -707,7 +773,7 @@ const elsewhere = [
   // Once the watch has formed the gate lifts for good, so scrolling back up
   // and down again is never trapped. Scrolling up is always free.
   const layout = document.querySelector<HTMLElement>("[data-stack-layout]");
-  const formTime = 2600; // collapse + strap + e-ink refresh, from LayerStack
+  const formTime = 1400; // collapse + strap + face drawn, from LayerStack
   const stepTime = 1100; // one plate turning on, plus a breath
   let formed = reduce || !canObserve || !layout;
   let formTimer = 0;
@@ -775,6 +841,61 @@ const elsewhere = [
       { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
     );
     for (const s of steps) io.observe(s);
+  }
+
+  // Proof reel: shuffle the photos on every visit, then lay the same set a
+  // second time so the belt loops without a seam. Speed is fixed in px/s, so
+  // a longer set takes proportionally longer per lap rather than racing.
+  const track = document.querySelector<HTMLElement>("[data-reel-track]");
+  if (track) {
+    const items = Array.from(track.children);
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+    track.replaceChildren(...items);
+    if (!reduce) {
+      for (const item of items) {
+        const copy = item.cloneNode(true) as HTMLElement;
+        copy.setAttribute("aria-hidden", "true");
+        copy.querySelector("a")?.setAttribute("tabindex", "-1");
+        track.append(copy);
+      }
+      const pxPerSecond = 45;
+      const setSpeed = () => track.style.setProperty("--reel-dur", `${track.scrollWidth / 2 / pxPerSecond}s`);
+      setSpeed();
+      addEventListener("load", setSpeed);
+      addEventListener("resize", setSpeed);
+    }
+  }
+
+  // Projects door: shuffle, then every few seconds the current photo slides
+  // aside and dissolves while the next one shows through underneath.
+  const doorReel = document.querySelector<HTMLElement>("[data-door-reel]");
+  if (doorReel) {
+    const photos = Array.from(doorReel.children) as HTMLElement[];
+    for (let i = photos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [photos[i], photos[j]] = [photos[j], photos[i]];
+    }
+    doorReel.replaceChildren(...photos);
+    photos.forEach((ph, i) => ph.classList.toggle("is-current", i === 0));
+    if (!reduce && canObserve && photos.length > 1) {
+      let at = 0;
+      let timer = 0;
+      const next = () => {
+        const out = photos[at];
+        at = (at + 1) % photos.length;
+        photos[at].classList.add("is-current");
+        out.classList.remove("is-current");
+        out.classList.add("is-leaving");
+        setTimeout(() => out.classList.remove("is-leaving"), 1200);
+      };
+      new IntersectionObserver(([e]) => {
+        clearInterval(timer);
+        if (e.isIntersecting) timer = window.setInterval(next, 3800);
+      }).observe(doorReel);
+    }
   }
 
   // Rail: shown after the hero, tracks the chapter in the middle of the screen.
