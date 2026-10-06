@@ -1,0 +1,32 @@
+---
+title: "Anirudha's Keeb"
+summary: "A handwired, wireless split keyboard with an OLED on each half and a layer that types corporate jargon in one keypress."
+date: 2026-10-06
+flagship: false
+cover: ../../assets/Keyboard/keyboard-oled-wide.jpg
+coverAlt: "A split 42-key keyboard on a purple backdrop: red printed keycaps on a white plate in a black case, with a small blue OLED beside the thumb cluster on each half."
+layers:
+  pcb: "Handwired diode matrix"
+  enclosure: "Printed, plate edited for OLED"
+  firmware: "ZMK, split over BLE"
+  software: "40-phrase jargon layer"
+gallery:
+  - src: ../../assets/Keyboard/keyboard-both-halves-usb.jpg
+    alt: "Both halves of the keyboard on a purple backdrop, red keycaps on a white plate in a black case, a USB cable plugged into the left half and an OLED beside each thumb cluster."
+  - src: ../../assets/Keyboard/keyboard-oled-glow.jpg
+    alt: "Close-up of the two inner edges: a red angled bezel on each half with a blue OLED inside, one showing a connection icon and the other a signal icon and a battery symbol."
+  - src: ../../assets/Keyboard/keyboard-halves-angled.jpg
+    alt: "The two halves angled apart on a purple backdrop, seen from above and to the side, showing the stepped red keycaps."
+  - src: ../../assets/Keyboard/keyboard-lit-front.jpg
+    alt: "The keyboard lit from above on a purple backdrop, both OLEDs glowing in the gap between the halves."
+---
+
+## What it does
+
+It is a 42-key split keyboard, one half per hand, wireless over Bluetooth or wired over USB. The base layout is a Corne, the layers are a coding and navigation layer and a symbols layer, and a fourth layer, reached by holding both thumb layer keys, types whole phrases: "Circling back on this.", "Let's take this offline.", "Ship it!". Each half has a small OLED showing the connection, the battery and the layer it is on.
+
+It follows the open [Sputnik handwired Corne design](https://github.com/vostoklabs/Sputnik-Handwired-Split-Corne-Keyboard-). Two things are mine: the MCU plate, edited with a slot for the OLED, and the corporate layer.
+
+## How it went
+
+[The blog post](/logs/keyboard-corporate-jargon-layer) covers the OLED and the corporate layer, including why a macro queue of 64 cuts the long phrases off mid-word. [The build log](/logs/keyboard-build-log-bench-notes) has the bench photos, from the first diodes on 2 September to both halves finished on the 5th.

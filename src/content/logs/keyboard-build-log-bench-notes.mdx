@@ -1,0 +1,57 @@
+---
+title: "Keyboard build log: five days of diodes, wire and red caps"
+description: "Handwiring a split Corne on the desk: diodes on every switch, first power-on at 01:46, an OLED coming alive, and the clutter in between."
+date: 2026-10-06
+cover: ../../assets/Keyboard/bench-both-halves.jpg
+draft: false
+---
+
+This is the bench side of [the keyboard post](/logs/keyboard-corporate-jargon-layer): the same build, photographed on a desk with a laptop, a soldering iron and nowhere to put anything. The photos run from 1 to 5 September.
+
+![The left half's white plate with switches fitted and a few red keycaps pressed on, lying on a wooden desk beside a laptop, a loose strip of switches and a pile of spare keycaps.](../../assets/Keyboard/switches-first-keycaps.jpg)
+
+## Diodes first
+
+The first real wiring was on 2 September, on the cutting mat. Every switch gets one diode, bent and soldered to a switch pin, with the other leg left long to become a row wire. This is the `col2row` diode direction in the firmware overlay, and it is what lets 21 switches share a handful of pins on the nice!nano without ghosting. Left half, 21 diodes.
+
+![Top view of the left plate on a green cutting mat with all 21 switches fitted, each with a diode soldered on and its long lead sticking out sideways. A slot for the OLED is visible along the top edge.](../../assets/Keyboard/plate-diodes-overview.jpg)
+
+The slot along the top edge is the change from the tutorial: the MCU plate with room for the OLED. It prints as a long pocket with two screw holes, and it is the one part of this plate that was not in the original.
+
+![Close-up of diodes soldered to the switch pins, long leads reaching across the plate.](../../assets/Keyboard/plate-diodes-closeup.jpg)
+
+## First power
+
+At 01:46 on 3 September, the nice!nano went onto the plate and a USB cable went into the laptop. The board's blue LED came on, and the laptop behind it has a file explorer open on the nice!nano's drive. That was the first moment the thing was a computer rather than a plate with opinions. Around it on the desk: red keycaps, cut diode legs, a yellow wire, a stray switch.
+
+![The left plate held in one hand, 21 switches fitted and a nice!nano mounted at the top right with a blue LED lit, a red USB cable running to a laptop. The desk below is covered in red keycaps and cut component leads.](../../assets/Keyboard/first-power-on.jpg)
+
+Later that morning the keycaps were on and the desk looked worse.
+
+![The left half with all red keycaps fitted, resting on a desk covered in coloured wire, a bag of purple keycaps and a laptop.](../../assets/Keyboard/wiring-mess-keycaps.jpg)
+
+## The screen
+
+On 4 September, just after midnight, the OLED came up. Text on a 128 × 32 panel is small enough to tell you immediately whether the wiring, the I2C address and the overlay are right.
+
+![Close-up of the left half's red OLED bezel with a blue screen showing a layer name, a Bluetooth icon and a battery symbol, a red wire trailing out below.](../../assets/Keyboard/oled-first-light.jpg)
+
+The firmware comments have the two things I would check first if it had stayed blank: the VCC pad is gated by the board's external-power pin on P0.13, and some modules sit at address 0x3D rather than 0x3C. There is also a video from that afternoon of the iron going to the nice!nano's header pins, which I cannot put on this page yet.
+
+That evening the left half was done and the right was still bare, switches fitted and the board sitting in the plate.
+
+![Both halves on the desk among clippers, tape and wire: the left finished in red keycaps with a dark OLED, the right still with exposed switches and its nice!nano.](../../assets/Keyboard/bench-both-halves.jpg)
+
+And a quick check of the right half once it had its screen, lit and still without caps, next to the finished left half.
+
+![The finished left half in red keycaps beside the right half with bare clear switches, its OLED lit, on a black laptop lid covered in stickers.](../../assets/Keyboard/right-half-bare-oled.jpg)
+
+## Done, on a mat
+
+By 01:21 on 5 September both halves were finished and photographed on a cutting mat. By the evening they were back on the desk, next to tweezers and tape, because the desk is where they live.
+
+![Both finished halves seen from above on a cutting mat, red keycaps, an OLED in each.](../../assets/Keyboard/both-halves-finished-mat.jpg)
+
+![The finished keyboard on the wooden desk, surrounded by tape, tweezers and cut leads.](../../assets/Keyboard/bench-finished.jpg)
+
+The corporate layer came last, and it is in the firmware, not in any of these photos. The finished keyboard, photographed properly, is in [the main post](/logs/keyboard-corporate-jargon-layer).
