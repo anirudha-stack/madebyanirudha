@@ -527,7 +527,8 @@ const elsewhere = [
     animation: reel var(--reel-dur, 90s) linear infinite;
   }
   .reel:hover .reel-track,
-  .reel:focus-within .reel-track {
+  .reel:focus-within .reel-track,
+  .reel-track.is-paused {
     animation-play-state: paused;
   }
   @keyframes reel {
@@ -559,8 +560,7 @@ const elsewhere = [
     padding: 0.35rem 0.65rem;
     font-size: 0.875rem;
     color: #ececee;
-    background: rgb(15 15 16 / 0.72);
-    backdrop-filter: blur(6px);
+    background: rgb(15 15 16 / 0.8);
   }
   @media (prefers-reduced-motion: reduce) {
     .reel {
@@ -780,7 +780,11 @@ const elsewhere = [
   let busyUntil = 0;
   function onStep(n: number) {
     clearTimeout(formTimer);
-    if (n > plates.length && !formed) formTimer = window.setTimeout(() => (formed = true), formTime);
+    if (n > plates.length && !formed)
+      formTimer = window.setTimeout(() => {
+        formed = true;
+        setGating(false);
+      }, formTime);
   }
   const pinned = () => {
     if (!layout) return false;
@@ -799,30 +803,40 @@ const elsewhere = [
   // pinned range, watch not yet formed.
   const gate = (down: boolean) => down && !formed && pinned();
 
-  addEventListener(
-    "wheel",
-    (e) => {
-      if (!gate(e.deltaY > 0)) return;
-      e.preventDefault();
-      advance();
-    },
-    { passive: false },
-  );
+  // The wheel and touch listeners must be non-passive to be able to swallow a
+  // gesture, and a non-passive touchmove makes every swipe on the page wait for
+  // the main thread. So they are only attached while the pinned stack is on
+  // screen and the watch has not formed yet, and dropped for good after that.
+  const onWheel = (e: WheelEvent) => {
+    if (!gate(e.deltaY > 0)) return;
+    e.preventDefault();
+    advance();
+  };
   let touchY = 0;
-  addEventListener("touchstart", (e) => (touchY = e.touches[0].clientY), { passive: true });
-  addEventListener(
-    "touchmove",
-    (e) => {
-      const dy = touchY - e.touches[0].clientY;
-      if (!gate(dy > 0)) return;
-      e.preventDefault();
-      if (dy > 24) {
-        touchY = e.touches[0].clientY;
-        advance();
-      }
-    },
-    { passive: false },
-  );
+  const onTouchStart = (e: TouchEvent) => {
+    touchY = e.touches[0].clientY;
+  };
+  const onTouchMove = (e: TouchEvent) => {
+    const dy = touchY - e.touches[0].clientY;
+    if (!gate(dy > 0)) return;
+    e.preventDefault();
+    if (dy > 24) {
+      touchY = e.touches[0].clientY;
+      advance();
+    }
+  };
+  let gating = false;
+  function setGating(on: boolean) {
+    if (on === gating) return;
+    gating = on;
+    const op = on ? addEventListener : removeEventListener;
+    op("wheel", onWheel as EventListener, { passive: false });
+    op("touchstart", onTouchStart as EventListener, { passive: true });
+    op("touchmove", onTouchMove as EventListener, { passive: false });
+  }
+  if (!formed && layout) {
+    new IntersectionObserver(([e]) => setGating(e.isIntersecting && !formed), { rootMargin: "50% 0px" }).observe(layout);
+  }
   addEventListener("keydown", (e) => {
     if (e.target !== document.body || e.altKey || e.ctrlKey || e.metaKey) return;
     const down = e.key === "ArrowDown" || e.key === "PageDown" || (e.key === " " && !e.shiftKey);
@@ -866,6 +880,10 @@ const elsewhere = [
       setSpeed();
       addEventListener("load", setSpeed);
       addEventListener("resize", setSpeed);
+      // Nothing to animate while it is off screen.
+      if (canObserve) {
+        new IntersectionObserver(([e]) => track.classList.toggle("is-paused", !e.isIntersecting)).observe(track.parentElement as Element);
+      }
     }
   }
 

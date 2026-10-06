@@ -15,7 +15,7 @@
 // Plate-local coordinates are a 140-unit square centred at the origin;
 // `iso` projects them to screen space.
 import { mouse } from "../lib/mouse";
-import { keyboard } from "../lib/sprites";
+import { bounds, keyboard } from "../lib/sprites";
 
 const iso = (x: number, y: number): [number, number] => [(x - y) * 0.866, (x + y) * 0.5];
 const p = (x: number, y: number) => iso(x, y).map((n) => n.toFixed(1)).join(" ");
@@ -150,11 +150,21 @@ const compactLabel = { x: 200, y: 432 };
 // is positioned by the script at the bottom of this file.
 const kb = keyboard();
 const mm = mouse();
+const kbNatural = 0.85; // how big each sprite is drawn, relative to its own units
+const kbBox = bounds(kb.elems);
+const mmBox = bounds(mm.elems);
 // Platter, in screen units: a flattened circle seen from above.
 const table = { cx: 200, cy: 276, rx: 186, ry: 93, thick: 12 };
+// Ticks round the rim, drawn on a circle; the script squashes and turns the circle.
+const ringPath = Array.from({ length: 72 }, (_, j) => {
+  const a = (j / 72) * Math.PI * 2;
+  const [f0, f1] = [j % 6 === 0 ? 0.8 : 0.86, 0.92];
+  return `M ${(100 * f0 * Math.sin(a)).toFixed(1)} ${(100 * f0 * Math.cos(a)).toFixed(1)} L ${(100 * f1 * Math.sin(a)).toFixed(1)} ${(100 * f1 * Math.cos(a)).toFixed(1)}`;
+}).join(" ");
 const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${table.rx} ${table.ry} 0 0 0 ${table.cx + table.rx} ${table.cy + table.thick} v ${-table.thick}`;
 ---
 
+<div class="stage relative h-full w-full" data-stage>
 <svg
   viewBox="0 0 460 470"
   class="stack h-full w-full"
@@ -167,12 +177,11 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
     <path d="M 200 40 V 440" stroke-dasharray="1 5" />
   </g>
 
-  {/* The turntable: a platter with a rim, a ring of ticks that turn with it, and a hub. */}
+  {/* The turntable: a platter with a rim and a hub. Its ring of ticks is a separate layer, below. */}
   <g class="platter" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true">
     <path d={tableRim} fill="var(--bg)" />
     <ellipse cx={table.cx} cy={table.cy} rx={table.rx} ry={table.ry} fill="var(--bg)" />
     <ellipse cx={table.cx} cy={table.cy} rx={table.rx - 10} ry={table.ry - 5} stroke="var(--rule)" />
-    <path d="" data-ticks stroke="var(--muted)" stroke-width="1" />
     <ellipse cx={table.cx} cy={table.cy} rx="7" ry="3.5" stroke="var(--muted)" />
   </g>
 
@@ -304,22 +313,6 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
     </g>
       </g>
     </g>
-
-    {/* The micromouse, drawn from the photographs of Undeer. */}
-    <g data-item="undeer" class="item sprite" data-scale={mm.scale} transform={`translate(200 276) scale(${mm.scale})`} style="opacity: 0">
-      <g stroke-width={1.5 / mm.scale}>
-        <ellipse rx="64" ry="34" class="spot" />
-        {mm.elems.map((e) => <path d={e.d} class={e.cls} style={e.style} />)}
-      </g>
-    </g>
-
-    {/* The split keyboard, Anirudha's Keeb. */}
-    <g data-item="keeb" class="item sprite" data-scale="0.85" transform="translate(200 276) scale(0.85)" style="opacity: 0">
-      <g stroke-width={1.5 / 0.85}>
-        <ellipse rx="176" ry="46" class="spot" />
-        {kb.elems.map((e) => <path d={e.d} class={e.cls} style={e.style} />)}
-      </g>
-    </g>
   </g>
 
   <g class="labels" font-family="var(--font-mono)" font-size="11" fill="var(--muted)">
@@ -331,6 +324,30 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
     <text x={compactLabel.x} y={compactLabel.y} text-anchor="middle" class="compact-label" data-compact-label>05 Device</text>
   </g>
 </svg>
+
+  {/* The turntable devices are their own HTML layers (the watch is cloned in by
+      the script when the turntable starts), so the GPU moves them as bitmaps
+      instead of the CPU repainting every path in the scene each frame. */}
+  <div class="devs" aria-hidden="true">
+    <div class="rim-ticks" data-ring>
+      <svg viewBox="-100 -100 200 200"><path d={ringPath} fill="none" stroke="var(--muted)" stroke-width="1" /></svg>
+    </div>
+    <div class="dev" data-dev="undeer" data-box={`${mmBox.x} ${mmBox.y} ${mmBox.w} ${mmBox.h}`} data-natural={mm.scale}>
+      <svg viewBox={`${mmBox.x} ${mmBox.y} ${mmBox.w} ${mmBox.h}`} class="sprite">
+        <g fill="none" stroke="currentColor" stroke-width={1.5 / mm.scale} stroke-linejoin="round" stroke-linecap="round">
+          {mm.elems.map((e) => <path d={e.d} class={e.cls} style={e.style} />)}
+        </g>
+      </svg>
+    </div>
+    <div class="dev" data-dev="keeb" data-box={`${kbBox.x} ${kbBox.y} ${kbBox.w} ${kbBox.h}`} data-natural={kbNatural}>
+      <svg viewBox={`${kbBox.x} ${kbBox.y} ${kbBox.w} ${kbBox.h}`} class="sprite">
+        <g fill="none" stroke="currentColor" stroke-width={1.5 / kbNatural} stroke-linejoin="round" stroke-linecap="round">
+          {kb.elems.map((e) => <path d={e.d} class={e.cls} style={e.style} />)}
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
 
 <style>
   .stack {
@@ -633,6 +650,60 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
 
   /* The turntable: the platter fades in under the watch, the other two
      devices step onto it, and the script turns the lot. */
+  .devs {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .dev {
+    position: absolute;
+    left: 0;
+    top: 0;
+    visibility: hidden;
+    will-change: transform, opacity;
+  }
+  .dev > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .stage.is-staged .dev {
+    visibility: visible;
+  }
+  /* Once the watch has been lifted into its own layer, the copy in the scene steps aside. */
+  .stage.is-staged [data-item="chronos"] {
+    display: none;
+  }
+  .rim-ticks {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    transition: opacity 700ms var(--ease);
+    will-change: transform;
+    z-index: 0;
+  }
+  .rim-ticks > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .stage.is-turntable .rim-ticks {
+    opacity: 1;
+  }
+  /* The lifted watch is a finished object: no replayed refresh, no idle blinking. */
+  .dev .watchface {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .dev .flash,
+  .dev .flow,
+  .dev .led,
+  .dev .cursor {
+    animation: none !important;
+  }
   .platter {
     opacity: 0;
     transition: opacity 700ms var(--ease);
@@ -753,69 +824,144 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
 </style>
 
 <script>
-  // The turntable. Once the stack has collapsed into the watch (and the e-ink
-  // has refreshed), the watch eases back onto a platter and two more devices
-  // step on. Three items sit 120 degrees apart on a circle; each frame turns
-  // the circle, so an item that swings out to the side shrinks and slides up
-  // the platter as it goes to the back, then dims, and is drawn behind the
+  // The turntable. Once the stack has collapsed into the watch, the watch is
+  // lifted into its own layer and eased back onto a platter, and two more
+  // devices step on. Three items sit 120 degrees apart on a circle; each frame
+  // turns the circle, so an item that swings out to the side shrinks and slides
+  // up the platter as it goes to the back, then dims, and is drawn behind the
   // one in front. The ticks round the rim turn with the same angle.
+  //
+  // Each device is an HTML element with its own inline svg and `will-change`,
+  // so a frame is three cheap transform/opacity updates that the GPU
+  // composites; nothing is repainted. (Drawing them all in the one big svg
+  // meant the CPU re-rasterised hundreds of paths every frame: fine on a
+  // laptop, not on a phone.)
   const svg = document.querySelector<SVGSVGElement>("[data-stack]");
-  const items = svg ? Array.from(svg.querySelectorAll<SVGGElement>("[data-item]")) : [];
-  const ticks = svg?.querySelector<SVGPathElement>("[data-ticks]");
+  const stage = svg?.parentElement as HTMLElement | null | undefined;
+  const ring = stage?.querySelector<HTMLElement>("[data-ring]");
   const label = svg?.querySelector<SVGTextElement>("[data-compact-label]");
-  if (svg && items.length === 3 && ticks && label) {
+  const devHost = stage?.querySelector<HTMLElement>(".devs");
+  if (svg && stage && ring && label && devHost) {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const names = ["Chronos", "Undeer", "Anirudha's Keeb"];
     const table = { cx: 200, cy: 276, rx: 186, ry: 93 };
     const orbit = { rx: 106, ry: 46 };
     const home = { x: 200, y: 280 }; // where the watch sits when it first forms
     const lap = 28; // seconds for one turn
-    const parent = items[0].parentElement as Element;
+    const frontScale = 0.68; // the largest a device is ever drawn (at the front)
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
     const ease = (t: number) => t * t * (3 - 2 * t);
+
+    type Box = { x: number; y: number; w: number; h: number };
+    type Dev = { el: HTMLElement; natural: number; render: number; box: Box; ox: number; oy: number };
+    const devs: (Dev | null)[] = [null, null, null]; // chronos, undeer, keeb
+    const fromEl = (el: HTMLElement, render: number): Dev => {
+      const [x, y, w, h] = (el.dataset.box ?? "0 0 1 1").split(" ").map(Number);
+      return { el, natural: Number(el.dataset.natural ?? 1), render, box: { x, y, w, h }, ox: 0, oy: 0 };
+    };
+    for (const [i, name] of [
+      [1, "undeer"],
+      [2, "keeb"],
+    ] as const) {
+      const el = devHost.querySelector<HTMLElement>(`[data-dev="${name}"]`);
+      if (el) devs[i] = fromEl(el, frontScale * Number(el.dataset.natural ?? 1));
+    }
+
+    // Screen pixels per scene unit, and the letterbox offset, as the main svg draws it.
+    let unit = 1;
+    let offX = 0;
+    let offY = 0;
+    const layout = () => {
+      const w = stage.clientWidth;
+      const h = stage.clientHeight;
+      unit = Math.min(w / 460, h / 470);
+      offX = (w - 460 * unit) / 2;
+      offY = (h - 470 * unit) / 2;
+      // The ring of ticks: a square layer the size of the platter's width, centred on it.
+      const side = 2 * table.rx * unit;
+      ring.style.width = `${side}px`;
+      ring.style.height = `${side}px`;
+      ring.style.left = `${offX + (table.cx - table.rx) * unit}px`;
+      ring.style.top = `${offY + table.cy * unit - side / 2}px`;
+      for (const d of devs) {
+        if (!d) continue;
+        const k = unit * d.render;
+        d.el.style.width = `${d.box.w * k}px`;
+        d.el.style.height = `${d.box.h * k}px`;
+        d.ox = -d.box.x * k;
+        d.oy = -d.box.y * k;
+        d.el.style.transformOrigin = `${d.ox}px ${d.oy}px`;
+      }
+    };
+
+    // Lift the finished watch out of the scene into its own layer.
+    const liftWatch = () => {
+      devs[0]?.el.remove();
+      const item = svg.querySelector<SVGGElement>('[data-item="chronos"]');
+      const paint = item?.parentElement;
+      if (!item || !paint) return;
+      const bb = item.getBBox();
+      const pad = 12;
+      const box = { x: bb.x - pad, y: bb.y - pad, w: bb.width + 2 * pad, h: bb.height + 2 * pad };
+      // A shallow copy of the scene's svg keeps the classes the watch's styles hang off.
+      const shell = svg.cloneNode(false) as SVGSVGElement;
+      shell.removeAttribute("data-stack");
+      shell.removeAttribute("aria-label");
+      shell.setAttribute("viewBox", `${box.x} ${box.y} ${box.w} ${box.h}`);
+      shell.setAttribute("class", `${(svg.getAttribute("class") ?? "").replace("is-turntable", "")} sprite`);
+      const paintCopy = paint.cloneNode(false) as SVGGElement;
+      const body = item.cloneNode(true) as SVGGElement;
+      body.removeAttribute("data-item");
+      body.removeAttribute("style");
+      body.removeAttribute("transform");
+      paintCopy.append(body);
+      shell.append(paintCopy);
+      const el = document.createElement("div");
+      el.className = "dev";
+      // Astro scopes this component's CSS with an attribute; the copy needs it too.
+      for (const attr of Array.from(svg.attributes)) if (attr.name.startsWith("data-astro-cid")) el.setAttribute(attr.name, attr.value);
+      el.dataset.dev = "chronos";
+      el.dataset.box = `${box.x} ${box.y} ${box.w} ${box.h}`;
+      el.append(shell);
+      devHost.prepend(el);
+      devs[0] = fromEl(el, 1);
+    };
 
     let k = 0; // 0 = stack, 1 = turntable
     let target = 0;
     let theta = 0;
-    let order = "";
     let shown = -1;
 
     const render = () => {
       const e = ease(k);
-      const depths = items.map((_, i) => Math.cos(theta + (i * Math.PI * 2) / 3));
-      items.forEach((el, i) => {
-        const a = theta + (i * Math.PI * 2) / 3;
-        const d = (depths[i] + 1) / 2;
-        const natural = Number(el.dataset.scale ?? 1);
-        const s = 0.4 + 0.28 * d;
+      const angle = (i: number) => theta + (i * Math.PI * 2) / 3;
+      const depths = [0, 1, 2].map((i) => Math.cos(angle(i)));
+      const rank = [0, 1, 2].sort((a, b) => depths[a] - depths[b]);
+      devs.forEach((d, i) => {
+        if (!d) return;
+        const a = angle(i);
+        const depth = (depths[i] + 1) / 2;
+        const s = 0.4 + 0.28 * depth;
         const ox = table.cx + orbit.rx * Math.sin(a);
         const oy = table.cy - 4 + orbit.ry * Math.cos(a);
-        const haze = 0.68 + 0.32 * d;
+        const haze = 0.68 + 0.32 * depth;
+        let x = ox;
+        let y = oy;
+        let scale = s * lerp(0.8, 1, e);
+        let opacity = e * haze;
         if (i === 0) {
-          el.setAttribute("transform", `translate(${lerp(home.x, ox, e).toFixed(1)} ${lerp(home.y, oy, e).toFixed(1)}) scale(${(lerp(1, s, e) * natural).toFixed(3)})`);
-          el.style.opacity = String(lerp(1, haze, e));
-        } else {
-          el.setAttribute("transform", `translate(${ox.toFixed(1)} ${oy.toFixed(1)}) scale(${(s * lerp(0.8, 1, e) * natural).toFixed(3)})`);
-          el.style.opacity = String(e * haze);
+          x = lerp(home.x, ox, e);
+          y = lerp(home.y, oy, e);
+          scale = lerp(1, s, e);
+          opacity = lerp(1, haze, e);
         }
+        const f = (scale * d.natural) / d.render;
+        d.el.style.transform = `translate(${(offX + x * unit - d.ox).toFixed(1)}px, ${(offY + y * unit - d.oy).toFixed(1)}px) scale(${f.toFixed(4)})`;
+        d.el.style.opacity = opacity.toFixed(3);
+        d.el.style.zIndex = String(rank.indexOf(i) + 1);
       });
-      // Back to front.
-      const sorted = items.map((el, i) => ({ el, i })).sort((p, q) => depths[p.i] - depths[q.i]);
-      const key = sorted.map((p) => p.i).join();
-      if (key !== order) {
-        order = key;
-        parent.append(...sorted.map((p) => p.el));
-      }
-      // The ring of ticks.
-      let d = "";
-      const n = 72;
-      for (let j = 0; j < n; j++) {
-        const a = theta + (j / n) * Math.PI * 2;
-        const f0 = j % 6 === 0 ? 0.8 : 0.86;
-        const f1 = 0.92;
-        d += `M ${(table.cx + f0 * table.rx * Math.sin(a)).toFixed(1)} ${(table.cy + f0 * table.ry * Math.cos(a)).toFixed(1)} L ${(table.cx + f1 * table.rx * Math.sin(a)).toFixed(1)} ${(table.cy + f1 * table.ry * Math.cos(a)).toFixed(1)} `;
-      }
-      ticks.setAttribute("d", d);
+      // The ring turns with the platter: a circle of ticks, squashed to the platter's ellipse.
+      ring.style.transform = `scaleY(${table.ry / table.rx}) rotate(${-theta}rad)`;
       // Name whatever is at the front.
       const front = depths.indexOf(Math.max(...depths));
       if (k > 0.99 && front !== shown) {
@@ -830,6 +976,7 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
     let raf = 0;
     let last = 0;
     let visible = true;
+    const unstage = () => stage.classList.remove("is-staged");
     const frame = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
@@ -839,6 +986,7 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
       if (target === 0 && k === 0) {
         theta = 0;
         render();
+        unstage();
         raf = 0;
         return;
       }
@@ -850,6 +998,7 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
         k = target;
         theta = 0;
         render();
+        if (target === 0) unstage();
         return;
       }
       if (!raf) {
@@ -868,21 +1017,31 @@ const tableRim = `M ${table.cx - table.rx} ${table.cy} v ${table.thick} A ${tabl
       if (now) {
         // As soon as the watch is whole: the plates have landed, the strap is on and the face has drawn.
         timer = window.setTimeout(() => {
+          liftWatch();
+          layout();
+          render();
+          stage.classList.add("is-staged");
           svg.classList.add("is-turntable");
+          stage.classList.add("is-turntable");
           target = 1;
           run();
         }, 1300);
       } else {
         svg.classList.remove("is-turntable");
+        stage.classList.remove("is-turntable");
         target = 0;
         run();
       }
     };
     new MutationObserver(sync).observe(svg, { attributes: true, attributeFilter: ["class"] });
+    new ResizeObserver(() => {
+      layout();
+      if (stage.classList.contains("is-staged")) render();
+    }).observe(stage);
     new IntersectionObserver(([en]) => {
       visible = en.isIntersecting;
       if (visible && (k > 0 || target > 0)) run();
     }).observe(svg);
-    render();
+    layout();
   }
 </script>

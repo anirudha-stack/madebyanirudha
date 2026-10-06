@@ -265,3 +265,32 @@ export function keyboard(): {
 
   return { elems, oleds, width: (X0 + 1.8) * K * KX };
 }
+
+/**
+ * The box a sprite occupies, from the absolute coordinates in its path data
+ * (M, L and C only; arcs and relative dots are within the padding). Used to
+ * give each sprite its own tightly sized layer.
+ */
+export function bounds(elems: Elem[], pad = 10) {
+  let x0 = Number.POSITIVE_INFINITY;
+  let y0 = Number.POSITIVE_INFINITY;
+  let x1 = Number.NEGATIVE_INFINITY;
+  let y1 = Number.NEGATIVE_INFINITY;
+  for (const { d } of elems) {
+    for (const seg of d.matchAll(/([MLC])([^MLCZhaHAV]*)/g)) {
+      const nums = (seg[2].match(/-?\d*\.?\d+/g) ?? []).map(Number);
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        x0 = Math.min(x0, nums[i]);
+        x1 = Math.max(x1, nums[i]);
+        y0 = Math.min(y0, nums[i + 1]);
+        y1 = Math.max(y1, nums[i + 1]);
+      }
+    }
+  }
+  return {
+    x: x0 - pad,
+    y: y0 - pad,
+    w: x1 - x0 + 2 * pad,
+    h: y1 - y0 + 2 * pad,
+  };
+}
