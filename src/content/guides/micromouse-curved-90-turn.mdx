@@ -1,0 +1,251 @@
+---
+title: "How to make a micromouse take a corner without stopping"
+description: "A constant-radius 90° arc with ω = v/R, ended by the gyro, that drives through corners without stopping: the geometry, the control law, the code, and the bugs it took."
+date: 2026-10-12
+draft: false
+---
+
+Most first micromouse turns are a stop, a pivot on the spot, and a restart. It works, and it is slow: every corner costs you the speed you built up on the straight.
+
+This guide is how Undeer, my 16×16 micromouse, turns without stopping. It keeps rolling at 250 mm/s, drives a circular arc through the corner, and carries on into the next cell, or straight into the next arc if the maze asks for one. At the competition the straights ran at 1.2 m/s and the curves stayed at the same 250 mm/s turn speed.
+
+The firmware is C++/Arduino on a Seeed XIAO ESP32-S3. Two BLDC motors sit on CAN, heading comes from a BNO085 gyro, and four IR sensors see the walls. The architecture is ported from the open-source `mazerunner-core` from UKMARS, which I used as the design reference throughout.
+
+## The idea: one number decides everything
+
+A corner in a micromouse maze joins two perpendicular corridor centre-lines. They cross at the centre of the turn cell. If the robot drives a **circle of radius R** that is tangent to both lines, then the arc has to start exactly R before that centre and finish exactly R after it. Every placement number follows from R alone, with no tuned offsets.
+
+The numbers for a 180 mm cell:
+
+```text
+FULL_CELL = 180 mm
+HALF_CELL =  90 mm
+R         = HALF_CELL / 2 = 45 mm
+
+arc length  = π/2 · R ≈ 70.7 mm
+arc reach   = R forward, R sideways
+straight between two back-to-back arcs = FULL_CELL − 2R = 90 mm
+constraint  : R ≤ HALF_CELL   (at R = HALF_CELL the arcs touch)
+```
+
+In the config this is a single constant, with the reasoning written next to it:
+
+```cpp
+// A search SS90 is a 90° constant-radius arc joining two perpendicular corridor
+// centre-lines that cross at the turn cell's centre. That one fact fixes ALL the
+// placement, with no tuned offsets:
+//   - the arc starts R before the cell centre   → entry offset ≡ R
+//   - the arc ends   R after  the cell centre   → exit  offset ≡ R
+//   - back-to-back (chained) arcs fire R before the next cell centre,
+//     so the straight between them is FULL_CELL − 2R
+constexpr float TURN_RADIUS_MM = HALF_CELL_MM / 2;   // 45mm for a 180mm cell
+```
+
+## Step 1: command the turn rate from the speed you are actually doing
+
+To drive a circle of radius R at speed v, the robot has to turn at **ω = v / R**. Use the *measured* forward speed rather than the target speed, and the arc is a true circle at any speed: if the robot is a bit slow, it turns a bit slower.
+
+At 250 mm/s and R = 45 mm that is about 318°/s. Hold on to that number, because it comes back later.
+
+## Step 2: let the gyro, not a timer, decide when the turn is over
+
+Feedforward alone drifts, so add a P-term. The arc has a schedule: heading should advance one radian for every R of arc length driven, so θ = s / R, where s is the distance travelled along the arc. The P-term pulls the measured gyro heading onto that schedule.
+
+Put together, one control tick looks like this:
+
+```cpp
+// measured heading (fast gyro) + odometry pose from encoder path length
+g_imu->update();
+headingDeg += IMU_YAW_SIGN * g_imu->yawRateRadS() * dt * RADS_TO_DEGS;
+const float enc = encoder_distance();
+const float ds  = enc - lastEnc; lastEnc = enc;
+s_arc += ds;
+const float rad = headingDeg * DEGS_TO_RADS;
+fwd += ds * cosf(rad);
+lat += ds * sinf(rad);
+
+// Constant-radius arc law: heading advances one radian per radius_mm of arc
+// length, so the feedforward is omega = v/R, and a P-term locks the measured
+// heading onto the arc-length schedule theta = s/R → a TRUE circle at any speed.
+const float v_meas      = ds / dt;
+const float theta_sched = dir * (s_arc / radius_mm) * RADS_TO_DEGS;
+const float omega_ff    = dir * (v_meas / radius_mm) * RADS_TO_DEGS;
+float omega_des = omega_ff + TN_TRACK_KP * (theta_sched - headingDeg);
+omega_des = constrain(omega_des, -omega_max_dps, omega_max_dps);      // safety cap
+```
+
+The loop runs while `fabsf(headingDeg) < fabsf(curAngle) - ANGLE_TOL`, with a 1° tolerance and a 3 s timeout. If there is no IMU, heading is integrated from the commanded ω instead, so the turn still ends.
+
+The important part is *what ends the loop*: the angle the gyro measured. My very first version used a timed rotation profile and let the IMU only trim it. More on why that was a mistake in the bugs section.
+
+The same loop also dead-reckons a pose from the encoders:
+
+```cpp
+fwd += ds * cosf(heading);   // displacement along the OLD corridor
+lat += ds * sinf(heading);   // displacement along the NEW corridor
+```
+
+`lat` is how far the robot has travelled along the corridor it is turning into. That matters in step 4.
+
+## Step 3: taper the turn rate so you land on 90°, not past it
+
+If the arc ends at full turn rate and hands off to a heading-hold, the hold can only brake at about 86°/s (`TN_CORR_OMEGA_MAX = 1.5 rad/s`). The robot swung about 5° past 90°.
+
+The fix is to ramp ω down inside the arc, using the usual "stop in the remaining distance" relation `ω = sqrt(2·α·remaining)`, then slew-limit the result:
+
+```cpp
+const float remainingDeg = fabsf(curAngle) - fabsf(headingDeg);
+const float omega_decel  = sqrtf(2.0f * alpha_dps2 * fmaxf(remainingDeg, 0.0f));
+omega_des = dir * fminf(fabsf(omega_des), omega_decel);               // land, don't slam
+
+const float dOmega = alpha_dps2 * dt;   // slew limit
+if (omega < omega_des) omega = fminf(omega + dOmega, omega_des);
+else                   omega = fmaxf(omega - dOmega, omega_des);
+
+apply_to_motors(fwd_mmps, omega * DEGS_TO_RADS);
+```
+
+α is 4000°/s². The safety cap is 400°/s.
+
+## Step 4: fire the arc at the right place and leave it in the right cell
+
+The caller coasts down to turn speed, rolls to the fire point without stopping, and hands over to the arc:
+
+```cpp
+void turn_smooth(TurnType turn_id) {
+    const TurnParameters& p = turn_params[turn_id];
+    // Arc fires R before the turn-cell centre — pure geometry.
+    const float turn_point = FULL_CELL_MM + HALF_CELL_MM - TURN_RADIUS_MM - TURN_ENTRY_TRIM_MM;
+    Motion::set_target_velocity(p.speed);              // slow the cruise to turn speed
+    if (Motion::position() < turn_point)
+        Motion::wait_until_position(turn_point);       // coast to fire point, no stop
+
+    const float exit_prog  = SENSING_POSITION_MM - HALF_CELL_MM;          // 170 − 90 = 80
+    const float chain_fire = FULL_CELL_MM - TURN_RADIUS_MM - TURN_CHAIN_ENTRY_TRIM_MM;
+    const float chain_read = chain_fire - NAV_CHAIN_READ_LEAD_MM;         // read 40mm before firing
+
+    Motion::SmoothTurnResult r =
+        Motion::smooth_turn_centered(p.angle, p.omega, p.alpha, p.speed,
+                                     TURN_RADIUS_MM, exit_prog, accel,
+                                     /*exit_speed=*/p.speed,              // flow, don't stop
+                                     decider, chain_read, chain_fire, exit_front_guard);
+
+    Motion::set_position(SENSING_POSITION_MM);         // re-anchor to the sensing point
+    ...
+}
+```
+
+Measured from the rear wall of the cell before the turn, the fire point is `180 + 90 − 45 − 30 = 195 mm`. That `30` is `TURN_ENTRY_TRIM_MM`, one of two hand-tuned trims that are left. On the hardware the robot entered the turn cell about 30 mm too deep, so I moved the fire point earlier. The other is `TURN_CHAIN_ENTRY_TRIM_MM = 5`, for turn-to-turn.
+
+After the arc comes a short phase B: roll straight, holding the new heading, until `|lat| == exit_progress`, then hand off to the cruise profile at turn speed. Because the arc's own sideways travel is already counted in `lat`, the stop point does not depend on how big the arc was.
+
+## Step 5: chain turns by reading the walls during the exit roll
+
+The side sensors are canted forward and see about 100 mm ahead. By the time the robot settles at its normal sensing spot after a turn, those beams already point into the cell *beyond* the one it just entered, so a side opening there would be missed.
+
+So the walls are read part-way through the exit roll, at `chain_read`. If the cell opens to the side, the robot fires the next arc from the same runway, and never stops. The decider returns the next angle, or 0 to settle normally:
+
+```cpp
+static float nav_chain_decider(float lat_progress_mm) {
+    bool front = Sensing::seeFrontWall();
+    bool left  = Sensing::sideWallForDecision(Sensing::Side::LEFT);
+    bool right = Sensing::sideWallForDecision(Sensing::Side::RIGHT);
+    if (g_nav_cells_done < g_nav_cells_left) {
+        if (!right) { step_into_next_cell(); update_map();
+                      g_heading = right_from(g_heading); return -90.0f; }
+        if (!left)  { step_into_next_cell(); update_map();
+                      g_heading = left_from(g_heading);  return +90.0f; }
+    }
+    return 0.0f;   // settle normally
+}
+```
+
+This one is the right-hand-rule decider from the navigation test. The search maze swaps in a flood-fill decider with the same signature, which is the point of passing it in as a function.
+
+## The whole algorithm in one place
+
+```text
+smooth_turn(angle=±90, v_turn, R, exit_progress, decider, chain_read, chain_fire):
+  loop:                                   # one iteration per arc (chains loop)
+    zero encoders; heading = 0; fwd = lat = s = 0; ω = 0
+    wall steering OFF                     # the arc owns heading
+
+    # Phase A — the arc
+    while |heading| < |angle| − 1°:
+        heading += gyro_rate · dt          # gyro is the truth
+        ds = Δ(mean wheel distance)
+        s += ds; fwd += ds·cos(heading); lat += ds·sin(heading)
+        v_meas   = ds/dt
+        θ_sched  = dir · s/R                                     # where heading SHOULD be
+        ω_des    = dir · v_meas/R  +  Kp·(θ_sched − heading)     # feedforward + P
+        ω_des    = clamp(ω_des, ±ω_max)                          # safety cap (400°/s)
+        ω_des    = dir · min(|ω_des|, sqrt(2·α·remaining_angle)) # land, don't slam
+        ω        = slew(ω → ω_des, α·dt)                         # α = 4000°/s²
+        motors(v_turn, ω)
+
+    # Optional chaining
+    if decider:
+        roll straight (heading-hold + wall steering) to chain_read
+        next = decider(lat)                # reads walls of the just-entered cell
+        if next ≠ 0:
+            roll to chain_fire; angle = next; continue   # next arc, no stop
+
+    # Phase B — settle / exit
+    roll straight holding new heading until |lat| = exit_progress
+    hand off to the cruise profile at v_turn (no stop)
+    return {heading, arc_fwd, arc_lat, exit_progress, arcs}
+```
+
+## The numbers
+
+| Thing | Value |
+| --- | --- |
+| Cell / half cell | 180 mm / 90 mm |
+| Arc radius R | 45 mm |
+| Arc length | ≈ 70.7 mm |
+| Search turn speed | 250 mm/s (also at competition) |
+| Required arc rate v/R | ≈ 318°/s |
+| ω safety cap | 400°/s |
+| Angular accel / slew α | 4000°/s² |
+| Heading P gain | `TN_TRACK_KP = 4.0` rad/s per rad |
+| Turn ends at | 90° − 1° |
+| Entry trim / chain trim | 30 mm / 5 mm |
+| Fire point | 195 mm from the rear wall of the cell before the turn |
+| Chain fire / chain read | 130 mm / 90 mm of lateral progress |
+| Sensing position | 170 mm into the cell |
+| Competition straights | 1.2 m/s |
+| Track width / wheel Ø | 50 mm / 32 mm |
+
+The control loop is a `delay(2)` per tick plus work, with dt clamped between 1 and 50 ms.
+
+## The bugs it took
+
+**It swung to about 110°.** A timed rotation profile decided when the turn ended. On slow logging ticks its dt clamp lost time, so it kept driving, and the robot walked too far into the next cell. The IMU only trimmed the turn and never ended it. Fix: the gyro-measured angle ends the turn, and forward motion is dead-reckoned.
+
+**Three different radii.** `TURN_RADIUS_MM` was 30 and decorative, the entry and exit offsets were 90 and 80, and the radius the robot actually drove was v/ω ≈ 51 mm. Chained turns came up about 5 mm short each time, and by the fourth turn the robot hit a wall. Fix: ω = v/R, with every offset derived from R.
+
+**Turns ended one full cell too far.** I had modelled the turn exit as landing in the diagonal cell, two cells on, when it lands in the pivot cell, one cell on. Fix: `exit_prog` from 260 down to 80.
+
+**The safety cap was secretly the controller.** `SS90E_OMEGA_DPS` was 280°/s, below the 318°/s that v/R needs at 250 mm/s and 45 mm. The whole arc saturated: a 51 mm radius instead of 45, plus a spiral while ω ramped up. That was the hidden reason the 30 mm and 20 mm entry trims seemed necessary and chains drifted. Raising the cap to 400°/s fixed it. The rule I wrote down for later: **the ω cap must exceed v/R with margin whenever speed or R changes.**
+
+**About 5° of overshoot at the end of the arc.** Fixed by the `sqrt(2·α·remaining)` taper in step 3.
+
+**Alternating chains drift off the centre-line.** A 90° turn rotates sideways error into along-track error and back, so errors circulate instead of dying. On L-R-L-R chains the per-turn biases add up, and on L-L-L-L they cancel over 360°. A single turn heals on the next straight because wall steering is on there. Chains do not heal, because wall steering is off between arcs. I once saw drift of about 60 mm off the centre-line on alternating chains. A continuous heading frame was tried, but the code on my competition branch still re-zeroes heading at the start of each arc.
+
+## What I would not copy blindly
+
+I also tried a larger radius. R = 80 looked good on paper and was refuted on the hardware the same day: at that radius the chained wall-read happens only about 119 mm from the front wall, the side sensors see the front wall's reflection as side walls, and later turns route into walls. My notes say the maximum R is set by *sensing*, not path geometry, around R ≲ 65 mm for this robot. A bigger R is not automatically better.
+
+Things I prototyped on another branch but did not take to competition: R = 60 with α = 8000, front-wall-anchored turn firing, and an "exit-line-locked" arc law that re-solves the radius every tick so the arc lands on the new centre-line by construction. The competition ran the plain ω = v/R law at R = 45 mm.
+
+## Checklist if you want to copy this
+
+1. Pick R ≤ half a cell, and check that your side sensors still see real side walls at the chain-read point.
+2. Derive entry offset, exit offset and chain spacing from R. Add trims only after the hardware tells you to.
+3. Command ω = v_measured / R, add a P-term on θ = s / R, and end the turn on the gyro angle.
+4. Make the ω cap larger than v/R with margin.
+5. Taper ω with `sqrt(2·α·remaining)` so you land on 90°.
+6. Dead-reckon `lat` and end the exit roll on it, so the stop point does not depend on the arc.
+7. Read walls during the exit roll if you want chained turns.
+
+The reference for all of this is the firmware itself: `lib/Motion/Motion.cpp` for the arc law, `lib/Mouse/Mouse.cpp` for `turn_smooth` and the chain decider, and `lib/Config/MazeConfig.h` for the geometry. The repo is [Undeer_Firmware](https://github.com/anirudha-stack/Undeer_Firmware).
