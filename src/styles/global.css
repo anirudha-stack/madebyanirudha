@@ -189,3 +189,141 @@
 .prose li + li {
   margin-top: 0.4em;
 }
+
+/* In-post figures (src/components/CornerCompare, ArcGeometry, OmegaCap).
+   Tokens only; amber marks the thing that moves or is selected. */
+.fig {
+  margin-top: 2.5rem;
+  margin-bottom: 2.5rem;
+}
+.fig svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.fig .g-grid {
+  stroke: var(--rule);
+  fill: none;
+}
+.fig .g-wall {
+  stroke: var(--fg);
+  stroke-width: 3;
+  stroke-linecap: square;
+  fill: none;
+}
+.fig .g-dash {
+  stroke: var(--muted);
+  stroke-dasharray: 4 4;
+  fill: none;
+}
+.fig .g-ink {
+  stroke: var(--fg);
+  fill: none;
+  stroke-width: 1.5;
+}
+.fig .g-run {
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fig .g-dot {
+  fill: var(--accent);
+}
+.fig .g-ring {
+  fill: var(--bg);
+  stroke: var(--fg);
+  stroke-width: 1.5;
+}
+.fig .g-txt {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.fig .g-txt-fg {
+  fill: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.fig-panels {
+  display: grid;
+  gap: 2rem 1.5rem;
+}
+@media (min-width: 640px) {
+  .fig-panels.two {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.fig-title {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  margin-bottom: 0.5rem;
+}
+.fig-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.5rem;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.9375rem;
+}
+.fig-btn {
+  padding: 0.5rem 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.3em;
+  text-decoration-thickness: 2px;
+}
+.fig-btn:hover {
+  text-decoration-color: var(--accent);
+}
+.fig-btn[aria-pressed="true"] {
+  color: var(--fg);
+  text-decoration-color: var(--accent);
+}
+.fig-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.fig label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.fig input[type="range"],
+.fig input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+.fig-read {
+  margin-top: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.fig-cap {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.fig-spd {
+  position: relative;
+  height: 4px;
+  margin-top: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.fig-spd > i {
+  display: block;
+  height: 4px;
+  width: 0;
+  background: var(--accent);
+}

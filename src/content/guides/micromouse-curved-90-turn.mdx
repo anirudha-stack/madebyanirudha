@@ -5,9 +5,17 @@ date: 2026-10-12
 draft: false
 ---
 
+import CornerCompare from "../../components/CornerCompare.astro";
+import ArcGeometry from "../../components/ArcGeometry.astro";
+import OmegaCap from "../../components/OmegaCap.astro";
+
 Most first micromouse turns are a stop, a pivot on the spot, and a restart. It works, and it is slow: every corner costs you the speed you built up on the straight.
 
 This guide is how Undeer, my 16×16 micromouse, turns without stopping. It keeps rolling at 250 mm/s, drives a circular arc through the corner, and carries on into the next cell, or straight into the next arc if the maze asks for one. At the competition the straights ran at 1.2 m/s and the curves stayed at the same 250 mm/s turn speed.
+
+Here is the same corner both ways. Press play.
+
+<CornerCompare />
 
 The firmware is C++/Arduino on a Seeed XIAO ESP32-S3. Two BLDC motors sit on CAN, heading comes from a BNO085 gyro, and four IR sensors see the walls. The architecture is ported from the open-source `mazerunner-core` from UKMARS, which I used as the design reference throughout.
 
@@ -40,6 +48,10 @@ In the config this is a single constant, with the reasoning written next to it:
 //     so the straight between them is FULL_CELL − 2R
 constexpr float TURN_RADIUS_MM = HALF_CELL_MM / 2;   // 45mm for a 180mm cell
 ```
+
+Try it: fire at the centre first, then at R before it, and drag the radius.
+
+<ArcGeometry />
 
 ## Step 1: command the turn rate from the speed you are actually doing
 
@@ -227,6 +239,10 @@ The control loop is a `delay(2)` per tick plus work, with dt clamped between 1 a
 **Turns ended one full cell too far.** I had modelled the turn exit as landing in the diagonal cell, two cells on, when it lands in the pivot cell, one cell on. Fix: `exit_prog` from 260 down to 80.
 
 **The safety cap was secretly the controller.** `SS90E_OMEGA_DPS` was 280°/s, below the 318°/s that v/R needs at 250 mm/s and 45 mm. The whole arc saturated: a 51 mm radius instead of 45, plus a spiral while ω ramped up. That was the hidden reason the 30 mm and 20 mm entry trims seemed necessary and chains drifted. Raising the cap to 400°/s fixed it. The rule I wrote down for later: **the ω cap must exceed v/R with margin whenever speed or R changes.**
+
+Here are both caps run through the same arc law, as a simulation:
+
+<OmegaCap />
 
 **About 5° of overshoot at the end of the arc.** Fixed by the `sqrt(2·α·remaining)` taper in step 3.
 

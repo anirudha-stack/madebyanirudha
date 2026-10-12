@@ -1,0 +1,172 @@
+---
+// Figure 1: the same corner taken two ways. Left, the stop-pivot-go turn most
+// people write first. Right, the constant-radius arc this guide builds.
+// Both run through one tiny speed simulation with the SAME assumed limits, so
+// the only thing that differs is the turn. Speeds are the search defaults
+// (400 mm/s straight, 250 mm/s turn); the acceleration limit and the pivot
+// time are assumptions for the picture, not measurements.
+const R = 45;
+const panels = [
+  {
+    kind: "without",
+    title: "Stop, pivot, restart",
+    d: "M90 340 V90 H340",
+    label: "Pivots on the spot at the cell centre.",
+  },
+  {
+    kind: "with",
+    title: "Constant-radius arc",
+    d: `M90 340 V${90 + R} A${R} ${R} 0 0 1 ${90 + R} 90 H340`,
+    label: "Rolls through at turn speed.",
+  },
+];
+---
+
+<figure class="fig" data-fig="corner" data-fire={340 - (90 + R)} data-arc={(Math.PI / 2) * R}>
+  <div class="fig-panels two">
+    {panels.map((p) => (
+      <div data-panel={p.kind}>
+        <p class="fig-title">{p.title}</p>
+        <svg viewBox="-8 -8 376 376" role="img" aria-label={`A corner taken by a micromouse. ${p.label}`}>
+          <path class="g-grid" d="M180 0V360M0 180H360" />
+          <path class="g-wall" d="M0 0H360V360M0 0V360M180 180V360" />
+          <path class="g-dash" d="M90 360V90H360" />
+          <path class="g-run" d={p.d} data-run />
+          <circle class="g-dot" r="7" cx="90" cy="340" data-dot />
+          <line class="g-ink" x1="90" y1="340" x2="90" y2="326" data-tick />
+        </svg>
+        <div class="fig-spd" aria-hidden="true"><i data-spd></i></div>
+        <p class="fig-read" data-read>0.00 s · 400 mm/s</p>
+      </div>
+    ))}
+  </div>
+  <div class="fig-bar">
+    <button class="fig-btn" type="button" data-play>Play both</button>
+    <span class="fig-read" data-verdict aria-live="polite"></span>
+  </div>
+  <figcaption class="fig-cap">
+    The dashed line is the corridor centre-line. Both robots start at 400 mm/s, and playback is
+    in slow motion (the timer shows real time). Same assumed acceleration limit (2000 mm/s²) and a 0.3 s pivot, so the
+    timings are illustrative, not measured.
+  </figcaption>
+</figure>
+
+<script>
+  import { play } from "../lib/figure.ts";
+
+  const A = 2000; // assumed accel/brake limit, mm/s^2
+  const VC = 400; // search straight speed
+  const VT = 250; // search turn speed
+  const PIVOT = 0.3; // assumed pivot hold, s
+  const DT = 0.005;
+  const SLOW = 0.4; // playback speed
+
+  interface Sample {
+    t: number;
+    d: number;
+    v: number;
+    rot: number; // 0..1 pivot progress (stop-and-pivot only)
+  }
+
+  function simulate(kind: string, L: number, dF: number, dE: number): Sample[] {
+    const out: Sample[] = [];
+    const dC = L / 2;
+    let t = 0;
+    let d = 0;
+    let v = VC;
+    let hold = 0;
+    let pivoted = false;
+    out.push({ t, d, v, rot: 0 });
+    while (d < L - 0.01 && t < 10) {
+      let target = VC;
+      if (kind === "without") {
+        if (!pivoted) {
+          const rem = dC - d;
+          target = Math.min(VC, Math.sqrt(2 * A * Math.max(rem, 0)));
+          if (rem <= 0.5) {
+            d = dC;
+            v = 0;
+            hold += DT;
+            t += DT;
+            if (hold >= PIVOT) pivoted = true;
+            out.push({ t, d, v, rot: Math.min(hold / PIVOT, 1) });
+            continue;
+          }
+        }
+      } else if (d < dF) {
+        target = Math.min(VC, Math.sqrt(VT * VT + 2 * A * (dF - d)));
+      } else if (d < dE) {
+        target = VT;
+      }
+      v = v < target ? Math.min(v + A * DT, target) : Math.max(v - A * DT, target);
+      d = kind === "without" && !pivoted ? Math.min(d + v * DT, dC) : d + v * DT;
+      t += DT;
+      out.push({ t, d, v, rot: pivoted ? 1 : 0 });
+    }
+    return out;
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-fig="corner"]')) {
+    const fire = Number(root.dataset.fire);
+    const arc = Number(root.dataset.arc);
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-panel]")].map((el) => {
+      const kind = el.dataset.panel ?? "";
+      const run = el.querySelector<SVGPathElement>("[data-run]");
+      const dot = el.querySelector<SVGCircleElement>("[data-dot]");
+      const tick = el.querySelector<SVGLineElement>("[data-tick]");
+      const spd = el.querySelector<HTMLElement>("[data-spd]");
+      const read = el.querySelector<HTMLElement>("[data-read]");
+      if (!run || !dot || !tick || !spd || !read) throw new Error("corner figure markup");
+      const L = run.getTotalLength();
+      const samples = simulate(kind, L, fire, fire + arc);
+      return { kind, run, dot, tick, spd, read, L, samples };
+    });
+    const tMax = Math.max(...panels.map((p) => p.samples[p.samples.length - 1].t));
+    const btn = root.querySelector<HTMLButtonElement>("[data-play]");
+    const verdict = root.querySelector<HTMLElement>("[data-verdict]");
+    if (!btn || !verdict) continue;
+
+    const draw = (p: (typeof panels)[number], t: number) => {
+      const i = Math.min(Math.floor(t / DT), p.samples.length - 1);
+      const s = p.samples[i];
+      const pt = p.run.getPointAtLength(s.d);
+      const a = p.run.getPointAtLength(Math.max(s.d - 2, 0));
+      const b = p.run.getPointAtLength(Math.min(s.d + 2, p.L));
+      let ang = Math.atan2(b.y - a.y, b.x - a.x);
+      if (p.kind === "without") ang = -Math.PI / 2 + (Math.PI / 2) * s.rot;
+      p.dot.setAttribute("cx", String(pt.x));
+      p.dot.setAttribute("cy", String(pt.y));
+      p.tick.setAttribute("x1", String(pt.x));
+      p.tick.setAttribute("y1", String(pt.y));
+      p.tick.setAttribute("x2", String(pt.x + 16 * Math.cos(ang)));
+      p.tick.setAttribute("y2", String(pt.y + 16 * Math.sin(ang)));
+      p.run.setAttribute("stroke-dasharray", `${s.d} ${p.L + 10}`);
+      p.spd.style.width = `${(s.v / VC) * 100}%`;
+      p.read.textContent = `${s.t.toFixed(2)} s · ${Math.round(s.v)} mm/s`;
+    };
+    const rest = () => {
+      for (const p of panels) {
+        draw(p, 0);
+        p.run.removeAttribute("stroke-dasharray");
+      }
+    };
+    rest();
+
+    let cancel = () => {};
+    btn.addEventListener("click", () => {
+      cancel();
+      verdict.textContent = "";
+      cancel = play(
+        (tMax / SLOW) * 1000,
+        (prog) => {
+          for (const p of panels) draw(p, prog * tMax);
+        },
+        () => {
+          btn.textContent = "Replay";
+          const [w, a] = panels.map((p) => p.samples[p.samples.length - 1].t);
+          verdict.textContent = `Same exit point reached in ${w.toFixed(2)} s without, ${a.toFixed(2)} s with.`;
+        },
+      );
+    });
+  }
+</script>

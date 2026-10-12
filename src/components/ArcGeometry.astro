@@ -1,0 +1,162 @@
+---
+// Figure 2: where the arc has to start. Two corridor centre-lines cross at the
+// cell centre; a circle of radius R tangent to both starts R before it and
+// ends R after it. "Guessed" fires at the centre (the obvious thing to try),
+// "Derived" fires R early. The geometry is exact; only the robot is a dot.
+// 2 x 2 cells of 180 mm, drawn 1 mm = 1 unit.
+---
+
+<figure class="fig" data-fig="geometry">
+  <svg viewBox="-8 -8 376 376" role="img" aria-label="Four maze cells in a U shape. A micromouse enters the bottom left cell, turns right in the top left cell and exits along the top. The arc is drawn for the chosen radius.">
+    <path class="g-grid" d="M180 0V360M0 180H360" />
+    <path class="g-wall" d="M0 0H360V360M0 0V360M180 180V360" />
+    <path class="g-dash" d="M90 360V90H270V360" />
+    <path class="g-run" data-run d="M90 340V135A45 45 0 0 1 135 90H340" />
+    <g data-marks></g>
+    <circle class="g-dot" r="7" cx="90" cy="340" data-dot />
+  </svg>
+  <div class="fig-bar">
+    <button class="fig-btn" type="button" data-mode="guess" aria-pressed="false">Fire at the centre</button>
+    <button class="fig-btn" type="button" data-mode="derived" aria-pressed="true">Fire R before the centre</button>
+  </div>
+  <div class="fig-bar" style="border-top: 0; margin-top: 0; padding-top: 0">
+    <label>
+      <span>Radius</span>
+      <input type="range" min="20" max="90" step="1" value="45" data-r aria-label="Arc radius in millimetres" />
+      <output class="fig-read" data-rout>45 mm</output>
+    </label>
+    <label>
+      <input type="checkbox" data-chain />
+      <span>Chain a second turn</span>
+    </label>
+    <button class="fig-btn" type="button" data-play>Play</button>
+  </div>
+  <p class="fig-read" data-read aria-live="polite"></p>
+  <figcaption class="fig-cap">
+    Dashed: the corridor centre-lines, which cross at the cell centre. The cell is 180 mm
+    square. Firing the arc at the centre ends it R off the exit line; firing R early lands it
+    on the line before any hardware trim.
+  </figcaption>
+</figure>
+
+<script>
+  import { play } from "../lib/figure.ts";
+
+  const NS = "http://www.w3.org/2000/svg";
+  const CELL = 180;
+  const el = (name: string, attrs: Record<string, string | number>, text?: string) => {
+    const e = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+    if (text) e.textContent = text;
+    return e;
+  };
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-fig="geometry"]')) {
+    const run = root.querySelector<SVGPathElement>("[data-run]");
+    const marks = root.querySelector<SVGGElement>("[data-marks]");
+    const dot = root.querySelector<SVGCircleElement>("[data-dot]");
+    const slider = root.querySelector<HTMLInputElement>("[data-r]");
+    const rout = root.querySelector<HTMLOutputElement>("[data-rout]");
+    const chain = root.querySelector<HTMLInputElement>("[data-chain]");
+    const read = root.querySelector<HTMLElement>("[data-read]");
+    const btn = root.querySelector<HTMLButtonElement>("[data-play]");
+    const modes = [...root.querySelectorAll<HTMLButtonElement>("[data-mode]")];
+    if (!run || !marks || !dot || !slider || !rout || !chain || !read || !btn) continue;
+
+    let mode: "guess" | "derived" = "derived";
+    let cancel = () => {};
+
+    const render = () => {
+      cancel();
+      const R = Number(slider.value);
+      const chained = chain.checked && mode === "derived";
+      chain.disabled = mode === "guess";
+      rout.textContent = `${R} mm`;
+      for (const m of modes) m.setAttribute("aria-pressed", String(m.dataset.mode === mode));
+
+      let d: string;
+      if (mode === "guess") {
+        d = `M90 340V90A${R} ${R} 0 0 1 ${90 + R} ${90 - R}H340`;
+      } else if (chained) {
+        d = `M90 340V${90 + R}A${R} ${R} 0 0 1 ${90 + R} 90H${270 - R}A${R} ${R} 0 0 1 270 ${90 + R}V340`;
+      } else {
+        d = `M90 340V${90 + R}A${R} ${R} 0 0 1 ${90 + R} 90H340`;
+      }
+      run.setAttribute("d", d);
+      run.removeAttribute("stroke-dasharray");
+      dot.setAttribute("cx", "90");
+      dot.setAttribute("cy", "340");
+      btn.textContent = "Play";
+
+      // Markers.
+      marks.replaceChildren();
+      const fireY = mode === "guess" ? 90 : 90 + R;
+      marks.append(
+        el("circle", { class: "g-ring", cx: 90, cy: 90, r: 4 }),
+        el("text", { class: "g-txt", x: 84, y: 80, "text-anchor": "end" }, "centre"),
+        el("circle", { class: "g-ring", cx: 90, cy: fireY, r: 5 }),
+        el("text", { class: "g-txt-fg", x: 84, y: fireY + 16, "text-anchor": "end" }, "fire"),
+      );
+      if (mode === "derived") {
+        marks.append(
+          el("path", { class: "g-ink", d: `M76 90V${90 + R}M72 90H80M72 ${90 + R}H80` }),
+          el("text", { class: "g-txt-fg", x: 70, y: 90 + R / 2 + 4, "text-anchor": "end" }, "R"),
+          el("path", { class: "g-ink", d: `M90 76H${90 + R}M90 72V80M${90 + R} 72V80` }),
+          el("text", { class: "g-txt-fg", x: 90 + R / 2, y: 68, "text-anchor": "middle" }, "R"),
+        );
+        if (chained) {
+          const gap = CELL - 2 * R;
+          marks.append(
+            el("circle", { class: "g-ring", cx: 270 - R, cy: 90, r: 5 }),
+            el("path", { class: "g-ink", d: `M${90 + R} 76H${270 - R}M${90 + R} 72V80M${270 - R} 72V80` }),
+            el("text", { class: "g-txt-fg", x: 180, y: 68, "text-anchor": "middle" }, `${gap} mm`),
+          );
+        }
+      } else {
+        const x = 90 + R + 16;
+        marks.append(
+          el("path", { class: "g-ink", d: `M${x} ${90 - R}V90M${x - 4} ${90 - R}H${x + 4}M${x - 4} 90H${x + 4}` }),
+          el("text", { class: "g-txt-fg", x: x + 8, y: 90 - R / 2 + 4 }, "off by R"),
+        );
+      }
+
+      const arc = (Math.PI / 2) * R;
+      let text: string;
+      if (mode === "guess") {
+        text = `Fire at the centre: the arc ends ${R} mm off the exit centre-line, so the robot leaves the turn in the wrong place.`;
+      } else {
+        text = `R = ${R} mm · arc length ${arc.toFixed(1)} mm · fires ${R} mm before the centre, ends ${R} mm after it`;
+        if (chained) text += ` · straight between arcs ${CELL - 2 * R} mm`;
+        if (R > 65) {
+          text += ` · Past about 65 mm the side sensors on this robot misread the front wall; R = 80 failed on the hardware.`;
+        }
+      }
+      read.textContent = text;
+    };
+
+    for (const m of modes) {
+      m.addEventListener("click", () => {
+        mode = m.dataset.mode === "guess" ? "guess" : "derived";
+        render();
+      });
+    }
+    slider.addEventListener("input", render);
+    chain.addEventListener("change", render);
+    btn.addEventListener("click", () => {
+      cancel();
+      const L = run.getTotalLength();
+      btn.textContent = "Replay";
+      cancel = play(
+        (L / 130) * 1000,
+        (p) => {
+          const pt = run.getPointAtLength(p * L);
+          dot.setAttribute("cx", String(pt.x));
+          dot.setAttribute("cy", String(pt.y));
+          run.setAttribute("stroke-dasharray", `${p * L} ${L + 10}`);
+        },
+        () => run.removeAttribute("stroke-dasharray"),
+      );
+    });
+    render();
+  }
+</script>

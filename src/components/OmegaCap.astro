@@ -1,0 +1,166 @@
+---
+// Figure 3: the safety cap that was secretly the controller. Same arc law,
+// R = 45 mm, 250 mm/s, run twice through the simulation in lib/arcSim.ts:
+// once with the omega cap at 280 deg/s (below the 318 deg/s the arc needs)
+// and once at 400. A simulation of the law in this guide, not hardware data.
+---
+
+<figure class="fig" data-fig="cap">
+  <div class="fig-panels two">
+    <div>
+      <p class="fig-title">Where the robot goes</p>
+      <svg viewBox="-12 -72 125 107" role="img" aria-label="Top view of a 90 degree turn. A dashed ideal arc of radius 45 millimetres, and two simulated paths: one with the turn-rate cap at 280 degrees per second that swings wider than the ideal, and one with the cap at 400 that follows it closely.">
+        <path class="g-dash" style="stroke-width: 0.5; stroke-dasharray: 2 2" d="M0 35V-72M0 -45H113" />
+        <path class="g-ink" style="stroke-width: 0.5" d="M0 0A45 45 0 0 1 45 -45" />
+        <path class="g-ink" style="stroke-width: 1.4" data-path="280" />
+        <path class="g-run" style="stroke-width: 1.4" data-path="400" />
+        <circle class="g-ring" style="stroke-width: 0.8" r="2" data-dot="280" />
+        <circle class="g-dot" r="2" data-dot="400" />
+        <text class="g-txt" style="font-size: 4.2px" x="111" y="-41" text-anchor="end">ideal exit line</text>
+        <text class="g-txt-fg" style="font-size: 4.2px" data-lab="280" text-anchor="start"></text>
+        <text class="g-txt-fg" style="font-size: 4.2px" data-lab="400" text-anchor="start"></text>
+      </svg>
+    </div>
+    <div>
+      <p class="fig-title">Turn rate over time</p>
+      <svg viewBox="0 0 300 170" role="img" aria-label="Turn rate in degrees per second against time. The arc needs 318. With the cap at 280 the rate flattens at 280. With the cap at 400 it rises to about 370, then tapers to zero as the turn finishes.">
+        <g data-axes></g>
+        <path class="g-ink" style="stroke-width: 1.6" data-trace="280" />
+        <path class="g-run" style="stroke-width: 2" data-trace="400" />
+        <text class="g-txt-fg" data-tlab="280" text-anchor="start"></text>
+        <text class="g-txt-fg" data-tlab="400" text-anchor="start"></text>
+      </svg>
+    </div>
+  </div>
+  <div class="fig-bar">
+    <button class="fig-btn" type="button" data-play>Play</button>
+  </div>
+  <p class="fig-read" data-read aria-live="polite"></p>
+  <figcaption class="fig-cap">
+    Simulation of the arc law above at R = 45 mm and 250 mm/s: P-term, 4000°/s² slew and the end
+    taper included. The arc loop ends at 89° (90° minus the 1° tolerance), so the traces stop there. Thin lines are the ideal circle and the exit centre-line.
+  </figcaption>
+</figure>
+
+<script>
+  import { f1, play } from "../lib/figure.ts";
+  import { type ArcSample, simulateArc } from "../lib/arcSim.ts";
+
+  const NS = "http://www.w3.org/2000/svg";
+  const R = 45;
+  const V = 250;
+  const TMAX = 0.4;
+  // chart frame
+  const X0 = 40;
+  const X1 = 290;
+  const Y0 = 140;
+  const Y1 = 12;
+  const WMAX = 420;
+  const tx = (t: number) => X0 + (t / TMAX) * (X1 - X0);
+  const wy = (w: number) => Y0 - (w / WMAX) * (Y0 - Y1);
+
+  const mk = (name: string, attrs: Record<string, string | number>, text?: string) => {
+    const e = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+    if (text) e.textContent = text;
+    return e;
+  };
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-fig="cap"]')) {
+    const get = <T extends Element>(sel: string) => {
+      const e = root.querySelector<T>(sel);
+      if (!e) throw new Error(`cap figure: ${sel}`);
+      return e;
+    };
+    const axes = get<SVGGElement>("[data-axes]");
+    const btn = get<HTMLButtonElement>("[data-play]");
+    const read = get<HTMLElement>("[data-read]");
+
+    // Axes.
+    for (const w of [0, 100, 200, 300, 400]) {
+      axes.append(
+        mk("path", { class: "g-grid", d: `M${X0} ${wy(w)}H${X1}` }),
+        mk("text", { class: "g-txt", x: X0 - 6, y: wy(w) + 4, "text-anchor": "end" }, String(w)),
+      );
+    }
+    for (const t of [0, 0.1, 0.2, 0.3, 0.4]) {
+      axes.append(mk("text", { class: "g-txt", x: tx(t), y: Y0 + 16, "text-anchor": "middle" }, t.toFixed(1)));
+    }
+    axes.append(
+      mk("text", { class: "g-txt", x: X0 - 6, y: 6, "text-anchor": "end" }, "°/s"),
+      mk("text", { class: "g-txt", x: X1, y: Y0 + 30, "text-anchor": "end" }, "time (s)"),
+      mk("path", { class: "g-dash", d: `M${X0} ${wy(318)}H${X1}` }),
+      mk("text", { class: "g-txt", x: X1, y: 9, "text-anchor": "end" }, "dashed: arc needs v/R ≈ 318°/s"),
+    );
+
+    const caps = [280, 400] as const;
+    const sims = Object.fromEntries(
+      caps.map((cap) => [cap, simulateArc({ radius: R, cap, speed: V })]),
+    ) as Record<number, ArcSample[]>;
+
+    const pathD = (s: ArcSample[], upTo: number) => {
+      let d = "M0 30L0 0";
+      for (let i = 1; i <= upTo; i++) d += `L${f1(s[i].x)} ${f1(-s[i].y)}`;
+      return d;
+    };
+    const traceD = (s: ArcSample[], upTo: number) => {
+      let d = `M${tx(0)} ${wy(0)}`;
+      for (let i = 1; i <= upTo; i++) d += `L${f1(tx(s[i].t))} ${f1(wy(s[i].omega))}`;
+      return d;
+    };
+
+    const draw = (t: number) => {
+      for (const cap of caps) {
+        const s = sims[cap];
+        const i = Math.min(Math.round(t / 0.002), s.length - 1);
+        get<SVGPathElement>(`[data-path="${cap}"]`).setAttribute("d", pathD(s, i));
+        get<SVGPathElement>(`[data-trace="${cap}"]`).setAttribute("d", traceD(s, i));
+        const dot = get<SVGCircleElement>(`[data-dot="${cap}"]`);
+        dot.setAttribute("cx", String(s[i].x));
+        dot.setAttribute("cy", String(-s[i].y));
+      }
+    };
+
+    // Static labels from the finished runs.
+    const stats = Object.fromEntries(
+      caps.map((cap) => {
+        const s = sims[cap];
+        const end = s[s.length - 1];
+        const peak = s.reduce((a, b) => (b.omega > a.omega ? b : a));
+        return [cap, { end, peak }];
+      }),
+    ) as Record<number, { end: ArcSample; peak: ArcSample }>;
+
+    const lab = (cap: number, text: string, x: number, y: number) => {
+      const e = get<SVGTextElement>(`[data-lab="${cap}"]`);
+      e.textContent = text;
+      e.setAttribute("x", String(x));
+      e.setAttribute("y", String(y));
+    };
+    lab(280, "cap 280", stats[280].end.x + 4, -stats[280].end.y);
+    lab(400, "cap 400", stats[400].end.x + 4, -stats[400].end.y + 5);
+    const tl = (cap: number, text: string, x: number, y: number) => {
+      const e = get<SVGTextElement>(`[data-tlab="${cap}"]`);
+      e.textContent = text;
+      e.setAttribute("x", String(x));
+      e.setAttribute("y", String(y));
+    };
+    tl(280, "cap 280", tx(0.25), wy(280) + 16);
+    tl(400, "cap 400", tx(stats[400].peak.t) + 8, wy(stats[400].peak.omega) - 8);
+
+    const rEff = V / ((280 * Math.PI) / 180);
+    const e280 = stats[280].end;
+    const e400 = stats[400].end;
+    read.textContent =
+      `Cap 280: ω pins at 280°/s while the arc needs 318, so the radius becomes v/ω = ${Math.round(rEff)} mm. ` +
+      `It exits ${Math.round(e280.x)} mm sideways and ${Math.round(e280.y)} mm forward. ` +
+      `Cap 400: ω peaks at ${Math.round(stats[400].peak.omega)}°/s and exits ${Math.round(e400.x)} mm sideways, ` +
+      `${Math.round(e400.y)} mm forward. The ideal circle ends at ${R}, ${R}.`;
+
+    draw(TMAX);
+    btn.addEventListener("click", () => {
+      btn.textContent = "Replay";
+      play(2200, (p) => draw(p * TMAX));
+    });
+  }
+</script>
