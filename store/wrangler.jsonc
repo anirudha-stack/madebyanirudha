@@ -1,0 +1,34 @@
+{
+  // Cloudflare Worker — store.madebyanirudha.in
+  // Account: madebyanirudha@gmail.com (same account as the main site's zone).
+  //
+  // The keyboard-kit configurator. A React single-page app served as static
+  // assets, plus this Worker for /api (login, saved builds, orders, logo
+  // uploads). Everything fits the free tier: Workers 100k req/day, D1 5 GB.
+  // Asset requests never run the Worker.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "madebyanirudha-store",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "store.madebyanirudha.in", "custom_domain": true }],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  // Builds, orders, job tickets and logo uploads.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "store",
+      "database_id": "5ce0fb8a-54a1-46c9-94b9-211d82fc4ce5",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Logo uploads live in D1 for now (migrations/0002). Generated PCB/case
+  // files will need R2: enable it in the dashboard (it wants a card on file,
+  // even on the free tier), `wrangler r2 bucket create madebyanirudha-store`,
+  // then add: "r2_buckets": [{ "binding": "FILES", "bucket_name": "madebyanirudha-store" }]
+  // Secrets (never in this file): STORE_PASSWORD, SESSION_SECRET.
+  // Local values live in .dev.vars; remote via `wrangler secret put`.
+}
